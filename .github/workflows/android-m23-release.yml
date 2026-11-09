@@ -67,6 +67,12 @@ jobs:
           AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
           git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
 
+      - name: Install ccache
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ccache
+          ccache --version
+
       - name: Build optimized Android Release
         working-directory: eden
         env:

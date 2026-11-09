@@ -26,7 +26,7 @@ Estas são recomendações iniciais de teste, não alterações mágicas no moto
 
 ## Build Android
 
-O workflow **Android M23 Release** baixa o Eden upstream com submódulos e executa o script oficial de build Android no flavor `standard`, tipo `Release`. Os APKs/AABs gerados são publicados como artefatos do GitHub Actions.
+O workflow **Android M23 Release** baixa o Eden upstream com submódulos e executa o script oficial de build Android no flavor `optimized`, tipo `Release`. Os APKs/AABs gerados são publicados como artefatos do GitHub Actions.
 
 - Execução manual: aba Actions → Android M23 Release → Run workflow.
 - O workflow registra o commit exato do upstream usado.

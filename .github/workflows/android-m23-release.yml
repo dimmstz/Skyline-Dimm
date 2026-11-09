@@ -1,0 +1,66 @@
+name: Android M23 Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-m23-release.yml"
+      - "README.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-m23-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Build Eden Android optimized Release (ARM64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Checkout device profile
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK and CMake
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-35" "ndk;30.0.16138531" "cmake;3.31.6"
+
+      - name: Clone Eden upstream with submodules
+        run: |
+          git clone --recursive --depth 1 --branch master https://git.eden-emu.dev/eden-emu/eden.git eden
+          git -C eden rev-parse HEAD | tee upstream-commit.txt
+          git -C eden submodule status --recursive
+
+      - name: Build optimized Android Release
+        working-directory: eden
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.16138531
+          CCACHE: "true"
+        run: |
+          chmod +x .ci/android/build.sh
+          .ci/android/build.sh --release --target optimized --build-type Release
+
+      - name: Upload APK/AAB and upstream revision
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: skyline-dimm-m23-release-${{ github.run_number }}
+          path: |
+            eden/artifacts/**
+            upstream-commit.txt
+          if-no-files-found: error
+          retention-days: 14

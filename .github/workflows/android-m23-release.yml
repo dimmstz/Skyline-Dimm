@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   build-release:
-    name: Import Eden source and build Android optimized Release (ARM64)
+    name: Import Eden source and build Android Legacy Release (ARM64)
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:
@@ -39,7 +39,7 @@ jobs:
 
       - name: Install Android NDK and CMake
         run: |
-          sdkmanager --install "platforms;android-35" "ndk;30.0.16138531" "cmake;3.31.6"
+          sdkmanager --install "platforms;android-35" "ndk;30.0.16138531" "cmake;3.31.6" "build-tools;36.0.0"
 
       - name: Clone Eden upstream with full history and recursive submodules
         run: |
@@ -80,7 +80,7 @@ jobs:
           sudo apt-get install --yes ccache
           ccache --version
 
-      - name: Build optimized Android Release
+      - name: Build Android Legacy Release
         working-directory: eden
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
@@ -88,7 +88,20 @@ jobs:
           CCACHE: "true"
         run: |
           chmod +x .ci/android/build.sh
-          .ci/android/build.sh --release --target optimized --build-type Release
+          .ci/android/build.sh --release --target legacy --build-type Release
+
+      - name: Validate APK manifest, alignment and signatures
+        working-directory: eden
+        run: |
+          set -euo pipefail
+          APK="artifacts/app-legacy-release.apk"
+          test -s "$APK"
+          TOOLS="$ANDROID_HOME/build-tools/36.0.0"
+          "$TOOLS/aapt" dump badging "$APK" | tee ../apk-badging.txt
+          "$TOOLS/zipalign" -c -v 4 "$APK"
+          "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee ../apk-signature.txt
+          grep -q "sdkVersion:\\x27" ../apk-badging.txt
+          grep -q "native-code: \\\"arm64-v8a\\\"" ../apk-badging.txt
 
       - name: Upload APK/AAB and upstream revision
         uses: actions/upload-artifact@v4
@@ -98,5 +111,7 @@ jobs:
           path: |
             eden/artifacts/**
             upstream-commit.txt
+            apk-badging.txt
+            apk-signature.txt
           if-no-files-found: warn
           retention-days: 14

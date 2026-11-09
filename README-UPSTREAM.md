@@ -1,46 +1,89 @@
-# Skyline Dimm — perfil Galaxy M23
+<!--
+# SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+# SPDX-License-Identifier: GPL-3.0-or-later
 
-Projeto experimental baseado no **Eden** (Nintendo Switch), com pipeline próprio para gerar APK Android e documentação de validação no Samsung Galaxy M23.
+# SPDX-FileCopyrightText: 2018 yuzu Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+-->
+<!-- lang: en-GB -->
 
-## Origem e licença
+<h1 align="center">
+  <br>
+  <a href="https://git.eden-emu.dev/eden-emu/eden"><img src="./dist/qt_themes/default/icons/256x256/eden.png" alt="Eden" width="200"></a>
+  <br>
+  <b>Eden</b>
+  <br>
+</h1>
 
-- Upstream: https://git.eden-emu.dev/eden-emu/eden
-- Branch acompanhada: `master`
-- Licença upstream: GNU GPL-3.0-or-later. Este projeto deve preservar avisos de copyright, licença e atribuição do Eden e de seus contribuidores.
-- O código completo do Eden é obtido do upstream durante o workflow; este repositório mantém a automação e o perfil de dispositivo. Isso evita copiar uma árvore upstream grande e desatualizada para este repositório.
+<h4 align="center"><b>Eden</b> is a free and open-source (FOSS) Switch 1 emulator started by developer Camille LaVey.
+<br>
+Written in C++, with builds for Windows, Linux, macOS, Android, FreeBSD and more.
+</h4>
 
-## Dispositivo-alvo
+<p align="center">
+    </a>
+    <a href="https://discord.gg/HstXbPch7X">
+        <img src="https://img.shields.io/discord/1367654015269339267?color=5865F2&label=Eden&logo=discord&logoColor=white"
+            alt="Discord">
+    </a>
+    <a href="https://stt.gg/qKgFEAbH">
+        <img src="https://img.shields.io/revolt/invite/qKgFEAbH?color=d61f3a&label=Stoat"
+            alt="Stoat">
+    </a>
+</p>
 
-Galaxy M23 5G (SM-M236B), Snapdragon 750G / Adreno 619, Android 14, ARM64.
+<p align="center">
+  <a href="#compatibility">Compatibility</a> |
+  <a href="#contribute">Contribute</a> |
+  <a href="#building">Building</a> |
+  <a href="#download">Download</a> |
+  <a href="#license">License</a>
+</p>
 
-### Perfil inicial conservador
+## Compatibility
 
-Estas são recomendações iniciais de teste, não alterações mágicas no motor nem garantia de FPS:
+The emulator is capable of running most commercial games at full speed, provided you meet the necessary hardware requirements.
 
-1. Usar a renderização Vulkan quando o jogo e o driver Qualcomm do aparelho forem estáveis; comparar com OpenGL por jogo se houver falhas.
-2. Começar em resolução 1x (nativa) e testar 0,75x/0,5x somente se a build oferecer essas opções e o jogo estiver limitado pela GPU.
-3. Manter precisão/compilação de shaders nos padrões recomendados pelo emulador; não desativar verificações de precisão globalmente.
-4. Fechar apps em segundo plano, manter espaço livre e evitar jogar enquanto o aparelho estiver quente/carregando.
-5. Registrar FPS, frametime, temperatura, jogo, versão do driver e backend. Comparar sempre a mesma cena e a mesma configuração.
-6. Não forçar drivers Vulkan de terceiros sem confirmar compatibilidade com Adreno 619 e com a versão do Android.
+A list of supported games will be available in future. Please be patient.
 
-## Build Android
+Check out our [website](https://eden-emu.dev) for the latest news on exciting features, monthly progress reports, and more!
 
-O workflow **Android M23 Release** baixa o Eden upstream com submódulos e executa o script oficial de build Android no flavor `optimized`, tipo `Release`. Os APKs/AABs gerados são publicados como artefatos do GitHub Actions.
+[![Packaging status](https://repology.org/badge/vertical-allrepos/eden-emulator.svg)](https://repology.org/project/eden-emulator/versions)
 
-- Execução manual: aba Actions → Android M23 Release → Run workflow.
-- O workflow registra o commit exato do upstream usado.
-- Build falha ou artefato ausente deve ser tratado como falha; não presumir sucesso.
+## Contribute
 
-## Limitações desta primeira etapa
+To contribute to Eden; be it financially, code, bug reports, or otherwise, see our [Contributing guidelines](./CONTRIBUTING.md).
 
-O repositório ainda não contém um fork integral nem patches internos de CPU/GPU do Eden. Não é seguro inventar otimizações C++ sem perfis de execução e testes A/B no aparelho. A primeira etapa estabelece build reproduzível e documentação do perfil; otimizações no motor devem entrar em patches pequenos, medidos e validados no M23.
+## Documentation
 
-## Próximas medições necessárias
+We have a user manual! See our [User Handbook](./docs/user/README.md).
 
-- FPS médio e 1% low em cenas reproduzíveis.
-- Frametime e stutter durante compilação de shaders.
-- Temperatura/thermal throttling após 15–20 minutos.
-- Comparativo Vulkan × OpenGL por jogo.
-- Consumo de RAM e encerramentos por pressão de memória.
+## Building
 
+See the [General Build Guide](docs/Build.md)
+
+For information on provided development tooling, see the [Tools directory](./tools)
+
+## Download
+
+You can download the latest releases from [our release page](https://git.eden-emu.dev/eden-emu/eden/releases).
+
+Save us some bandwidth! We have [mirrors available](./docs/user/ThirdParty.md#mirrors) as well.
+
+## License
+
+Eden is licensed under the GPLv3 (or any later version). Refer to the [LICENSE.txt](https://git.eden-emu.dev/eden-emu/eden/src/branch/master/LICENSE.txt) file.
+
+## Special thanks
+
+Super special thanks to Cloudflare for preventing the git server from blowing up.
+
+- Yuzu
+- Ryujinx
+- Sudachi
+- Citron
+- Torzu
+- Suyu
+- Ryubing
+
+And everyone who continues or had contributed to the project! <3

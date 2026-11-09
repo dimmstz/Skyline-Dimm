@@ -1,0 +1,89 @@
+name: Android M23 Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-m23-release.yml"
+      - "README.md"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-m23-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Import Eden source and build Android optimized Release (ARM64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Checkout Skyline-Dimm
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools"
+
+      - name: Install Android NDK and CMake
+        run: |
+          sdkmanager --install "platforms;android-35" "ndk;30.0.16138531" "cmake;3.31.6"
+
+      - name: Clone Eden upstream with full history and recursive submodules
+        run: |
+          git clone --recursive --branch master https://git.eden-emu.dev/eden-emu/eden.git eden
+          git -C eden rev-parse HEAD | tee upstream-commit.txt
+          git -C eden submodule status --recursive
+
+      - name: Merge complete Eden source into Skyline-Dimm main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git -C eden config user.name "github-actions[bot]"
+          git -C eden config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
+          git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
+          git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
+          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml
+          cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
+          cp README.md eden/M23-PERFORMANCE-PROFILE.md
+          git -C eden add .github/workflows/android-m23-release.yml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
+          if ! git -C eden diff --cached --quiet; then
+            git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
+          fi
+          AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+
+      - name: Build optimized Android Release
+        working-directory: eden
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.16138531
+          CCACHE: "true"
+        run: |
+          chmod +x .ci/android/build.sh
+          .ci/android/build.sh --release --target optimized --build-type Release
+
+      - name: Upload APK/AAB and upstream revision
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: skyline-dimm-m23-release-${{ github.run_number }}
+          path: |
+            eden/artifacts/**
+            upstream-commit.txt
+          if-no-files-found: warn
+          retention-days: 14

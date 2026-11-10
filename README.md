@@ -18,7 +18,7 @@ As alterações específicas do aparelho devem ser pequenas, isoladas e acompanh
 
 ## Perfil de desempenho
 
-Consulte [M23-PERFORMANCE-PROFILE.md](./M23-PERFORMANCE-PROFILE.md) para as configurações iniciais, compatibilidade conhecida e protocolo de medição.
+Consulte [M23-PERFORMANCE-PROFILE.md](./M23-PERFORMANCE-PROFILE.md) para as configurações iniciais e [M23-DEEP-PERFORMANCE-ANALYSIS.md](./M23-DEEP-PERFORMANCE-ANALYSIS.md) para a análise do código upstream, gargalos e plano A/B.
 
 ## Compilação Android
 

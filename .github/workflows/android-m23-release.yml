@@ -100,8 +100,38 @@ jobs:
           "$TOOLS/aapt" dump badging "$APK" | tee ../apk-badging.txt
           "$TOOLS/zipalign" -c -v 4 "$APK"
           "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee ../apk-signature.txt
-          grep -q "sdkVersion:\\x27" ../apk-badging.txt
-          grep -q "native-code: \\\"arm64-v8a\\\"" ../apk-badging.txt
+          grep -q "^sdkVersion:'29'" ../apk-badging.txt
+          unzip -Z1 "$APK" | tee ../apk-contents.txt
+          grep -q '^lib/arm64-v8a/.*\\.so
+
+      - name: Upload APK/AAB and upstream revision
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: skyline-dimm-m23-release-${{ github.run_number }}
+          path: |
+            eden/artifacts/**
+            upstream-commit.txt
+            apk-badging.txt
+            apk-signature.txt
+          if-no-files-found: warn
+          retention-days: 14
+ ../apk-contents.txt
+          ! grep -q '^lib/armeabi-v7a/.*\\.so
+
+      - name: Upload APK/AAB and upstream revision
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: skyline-dimm-m23-release-${{ github.run_number }}
+          path: |
+            eden/artifacts/**
+            upstream-commit.txt
+            apk-badging.txt
+            apk-signature.txt
+          if-no-files-found: warn
+          retention-days: 14
+ ../apk-contents.txt
 
       - name: Upload APK/AAB and upstream revision
         uses: actions/upload-artifact@v4

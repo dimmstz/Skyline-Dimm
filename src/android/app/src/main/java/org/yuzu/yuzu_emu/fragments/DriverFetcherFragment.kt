@@ -77,7 +77,8 @@ class DriverFetcherFragment : Fragment() {
         IntRange(Integer.MIN_VALUE, 9) to "Unsupported",
         IntRange(10, 99) to "KIMCHI Latest", // Special case for Adreno Axx
         IntRange(100, 599) to "Unsupported",
-        IntRange(600, 639) to "Mr. Purple EOL-24.3.4",
+        // Adreno 619 (A6xx): use the KIMCHI Turnip R8 package, not A8xx/Qualcomm packages.
+        IntRange(600, 639) to "KIMCHI Turnip R8 (A6xx)",
         IntRange(640, 699) to "Mr. Purple T19",
         IntRange(700, 710) to "Mr. Purple T29",
         IntRange(711, 899) to "Mr. Purple T30",

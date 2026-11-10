@@ -5,9 +5,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - ".github/workflows/android-m23-release.yml"
-      - "README.md"
 
 permissions:
   contents: write
@@ -18,6 +15,7 @@ concurrency:
 
 jobs:
   build-release:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     name: Import Eden source and build Android Legacy Release (ARM64)
     runs-on: ubuntu-24.04
     timeout-minutes: 240
@@ -61,7 +59,7 @@ jobs:
           git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
           git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml
           cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
-          cp README.md eden/M23-PERFORMANCE-PROFILE.md
+          cp M23-PERFORMANCE-PROFILE.md eden/M23-PERFORMANCE-PROFILE.md
           git -C eden add .github/workflows/android-m23-release.yml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
           if ! git -C eden diff --cached --quiet; then
             git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"

@@ -2,6 +2,9 @@ name: Android M23 Release
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
@@ -48,6 +51,7 @@ jobs:
           git -C eden submodule status --recursive
 
       - name: Merge complete Eden source into Skyline-Dimm main
+        if: github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

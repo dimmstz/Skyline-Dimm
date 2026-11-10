@@ -50,26 +50,42 @@ jobs:
           git -C eden rev-parse HEAD | tee upstream-commit.txt
           git -C eden submodule status --recursive
 
-      - name: Merge complete Eden source into Skyline-Dimm main
-        if: github.event_name != 'pull_request'
+      - name: Integrate Skyline-Dimm source and M23 profile
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           git -C eden config user.name "github-actions[bot]"
           git -C eden config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
-          git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
-          git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
-          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml
-          cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
-          cp M23-PERFORMANCE-PROFILE.md eden/M23-PERFORMANCE-PROFILE.md
-          git -C eden add .github/workflows/android-m23-release.yml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
-          if ! git -C eden diff --cached --quiet; then
-            git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
+
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            test -n "${PR_HEAD_SHA}"
+            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${PR_HEAD_SHA}"
+          else
+            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" main
           fi
-          AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+
+          SOURCE_SHA="$(git -C eden rev-parse FETCH_HEAD)"
+          git -C eden show "${SOURCE_SHA}:README.md" > /tmp/skyline-readme.md
+          git -C eden merge --allow-unrelated-histories --no-edit -X ours "${SOURCE_SHA}"
+          git -C eden checkout "${SOURCE_SHA}" -- .github/workflows/android-m23-release.yml
+
+          if git -C eden cat-file -e "${SOURCE_SHA}:M23-PERFORMANCE-PROFILE.md" 2>/dev/null; then
+            git -C eden show "${SOURCE_SHA}:M23-PERFORMANCE-PROFILE.md" > M23-PERFORMANCE-PROFILE.md
+            cp M23-PERFORMANCE-PROFILE.md eden/M23-PERFORMANCE-PROFILE.md
+          fi
+
+          cp /tmp/skyline-readme.md eden/README-SKYLINE.md
+          git -C eden add .github/workflows/android-m23-release.yml README-SKYLINE.md M23-PERFORMANCE-PROFILE.md
+          if ! git -C eden diff --cached --quiet; then
+            git -C eden commit -m "Integrate Skyline-Dimm source with Galaxy M23 profile"
+          fi
+
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            AUTH_HEADER="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
+            git -C eden -c http.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" push "https://github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+          fi
 
       - name: Install shader compiler tools
         run: |
@@ -102,13 +118,15 @@ jobs:
         run: |
           set -euo pipefail
           APK="artifacts/app-legacy-release.apk"
-          test -s "$APK"
-          TOOLS="$ANDROID_HOME/build-tools/36.0.0"
-          "$TOOLS/aapt" dump badging "$APK" | tee ../apk-badging.txt
-          "$TOOLS/zipalign" -c -v 4 "$APK"
-          "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee ../apk-signature.txt
+          test -s "${APK}"
+          TOOLS="${ANDROID_HOME}/build-tools/36.0.0"
+          "${TOOLS}/aapt" dump badging "${APK}" | tee ../apk-badging.txt
+          "${TOOLS}/zipalign" -c -v 4 "${APK}"
+          "${TOOLS}/apksigner" verify --verbose --print-certs "${APK}" | tee ../apk-signature.txt
           grep -q "^sdkVersion:'29'" ../apk-badging.txt
-          unzip -Z1 "$APK" | tee ../apk-contents.txt
+          grep -q "package: name='dev.legacy.eden_emulator'" ../apk-badging.txt
+          grep -q "^native-code: 'arm64-v8a'" ../apk-badging.txt
+          unzip -Z1 "${APK}" | tee ../apk-contents.txt
           grep -q '^lib/arm64-v8a/' ../apk-contents.txt
 
       - name: Upload APK and validation reports

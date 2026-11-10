@@ -22,7 +22,7 @@ Este documento é um perfil inicial conservador, não uma alegação de que o em
 | NVDEC | CPU como primeiro teste no Android | Priorizar estabilidade de vídeos/cutscenes; comparar se houver opção alternativa |
 | Áudio | SDL3, se disponível | Confirmar ausência de estalos e dessincronização |
 | Precisão de CPU/GPU | Padrão/recomendado | Não desativar verificações de precisão globalmente |
-| Compilação/cache de shaders | Padrão e cache persistente habilitado, se disponível | Primeiro carregamento pode apresentar stutter |
+| Workers de pipelines Vulkan | 2 como padrão; testar 3 e 4 | Mais workers aceleram compilação, mas aumentam calor; não usar 8 sem medição |\n| Shaders assíncronos | Testar ligado/desligado por jogo | Pode reduzir travadas de compilação, mas causar pop-in; não garante FPS sustentado |\n| Compilação/cache de shaders | Cache persistente habilitado, se disponível | Evitar limpar cache repetidamente; primeiro carregamento pode apresentar stutter |
 | Overclock/forçar clocks | Desativado | Evitar calor, consumo e throttling |
 
 ## Compatibilidade e limites

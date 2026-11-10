@@ -102,8 +102,11 @@ jobs:
           "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee ../apk-signature.txt
           grep -q "^sdkVersion:'29'" ../apk-badging.txt
           unzip -Z1 "$APK" | tee ../apk-contents.txt
-          grep -q '^lib/arm64-v8a/.*\\.so
-
+          grep -q '^lib/arm64-v8a/.*[.]so$' ../apk-contents.txt
+          if grep -q '^lib/armeabi-v7a/.*[.]so$' ../apk-contents.txt; then
+            echo 'Unexpected 32-bit native libraries found' >&2
+            exit 1
+          fi
       - name: Upload APK/AAB and upstream revision
         uses: actions/upload-artifact@v4
         if: always()

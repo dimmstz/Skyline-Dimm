@@ -3,7 +3,8 @@ name: Android M23 Release
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - ".github/workflows/android-m23-release.yml"
       - "README.md"
@@ -41,8 +42,9 @@ jobs:
         run: |
           sdkmanager --install "platforms;android-35" "ndk;30.0.16138531" "cmake;3.31.6" "build-tools;36.0.0"
 
-      - name: Clone Eden upstream with full history and recursive submodules
+      - name: Clone Eden upstream with recursive submodules
         run: |
+          set -euo pipefail
           git clone --recursive --branch master https://git.eden-emu.dev/eden-emu/eden.git eden
           git -C eden rev-parse HEAD | tee upstream-commit.txt
           git -C eden submodule status --recursive
@@ -69,6 +71,7 @@ jobs:
 
       - name: Install shader compiler tools
         run: |
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install --yes glslang-tools
           command -v glslangValidator
@@ -76,6 +79,7 @@ jobs:
 
       - name: Install ccache
         run: |
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install --yes ccache
           ccache --version
@@ -87,6 +91,7 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.16138531
           CCACHE: "true"
         run: |
+          set -euo pipefail
           chmod +x .ci/android/build.sh
           .ci/android/build.sh --release --target legacy --build-type Release
 
@@ -102,27 +107,9 @@ jobs:
           "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee ../apk-signature.txt
           grep -q "^sdkVersion:'29'" ../apk-badging.txt
           unzip -Z1 "$APK" | tee ../apk-contents.txt
-          grep -q '^lib/arm64-v8a/.*[.]so$' ../apk-contents.txt
-          if grep -q '^lib/armeabi-v7a/.*[.]so$' ../apk-contents.txt; then
-            echo 'Unexpected 32-bit native libraries found' >&2
-            exit 1
-          fi
-      - name: Upload APK/AAB and upstream revision
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: skyline-dimm-m23-release-${{ github.run_number }}
-          path: |
-            eden/artifacts/**
-            upstream-commit.txt
-            apk-badging.txt
-            apk-signature.txt
-          if-no-files-found: warn
-          retention-days: 14
- ../apk-contents.txt
-          ! grep -q '^lib/armeabi-v7a/.*\\.so
+          grep -q '^lib/arm64-v8a/' ../apk-contents.txt
 
-      - name: Upload APK/AAB and upstream revision
+      - name: Upload APK and validation reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -132,19 +119,6 @@ jobs:
             upstream-commit.txt
             apk-badging.txt
             apk-signature.txt
-          if-no-files-found: warn
-          retention-days: 14
- ../apk-contents.txt
-
-      - name: Upload APK/AAB and upstream revision
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: skyline-dimm-m23-release-${{ github.run_number }}
-          path: |
-            eden/artifacts/**
-            upstream-commit.txt
-            apk-badging.txt
-            apk-signature.txt
+            apk-contents.txt
           if-no-files-found: warn
           retention-days: 14

@@ -1,89 +1,48 @@
-<!--
-# SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Perfil de desempenho — Galaxy M23
 
-# SPDX-FileCopyrightText: 2018 yuzu Emulator Project
-# SPDX-License-Identifier: GPL-2.0-or-later
--->
-<!-- lang: en-GB -->
+## Hardware de referência
 
-<h1 align="center">
-  <br>
-  <a href="https://git.eden-emu.dev/eden-emu/eden"><img src="./dist/qt_themes/default/icons/256x256/eden.png" alt="Eden" width="200"></a>
-  <br>
-  <b>Eden</b>
-  <br>
-</h1>
+- Samsung Galaxy M23 5G (SM-M236B)
+- Qualcomm Snapdragon 750G
+- GPU Qualcomm Adreno 619
+- Android 14 / API 34
+- Memória física: 8 GB
+- ABI: arm64-v8a
 
-<h4 align="center"><b>Eden</b> is a free and open-source (FOSS) Switch 1 emulator started by developer Camille LaVey.
-<br>
-Written in C++, with builds for Windows, Linux, macOS, Android, FreeBSD and more.
-</h4>
+Este documento é um perfil inicial conservador, não uma alegação de que o emulador já foi otimizado ou validado em todos os jogos nesse aparelho.
 
-<p align="center">
-    </a>
-    <a href="https://discord.gg/HstXbPch7X">
-        <img src="https://img.shields.io/discord/1367654015269339267?color=5865F2&label=Eden&logo=discord&logoColor=white"
-            alt="Discord">
-    </a>
-    <a href="https://stt.gg/qKgFEAbH">
-        <img src="https://img.shields.io/revolt/invite/qKgFEAbH?color=d61f3a&label=Stoat"
-            alt="Stoat">
-    </a>
-</p>
+## Configuração inicial recomendada
 
-<p align="center">
-  <a href="#compatibility">Compatibility</a> |
-  <a href="#contribute">Contribute</a> |
-  <a href="#building">Building</a> |
-  <a href="#download">Download</a> |
-  <a href="#license">License</a>
-</p>
+| Opção | Ponto de partida | Observação |
+|---|---|---|
+| Backend gráfico | Vulkan | Testar OpenGL por jogo se houver artefatos, falhas ou fechamento |
+| Driver | Driver Qualcomm de sistema; Turnip somente em versão testada | Não presumir que a versão mais nova seja a mais rápida ou estável |
+| Resolução | 1x | Reduzir para 0,75x ou 0,5x somente se a build oferecer e houver gargalo de GPU |
+| Async GPU | Ligado como primeiro teste | Comparar ligado/desligado no mesmo trecho; pode causar incompatibilidades específicas |
+| NVDEC | CPU como primeiro teste no Android | Priorizar estabilidade de vídeos/cutscenes; comparar se houver opção alternativa |
+| Áudio | SDL3, se disponível | Confirmar ausência de estalos e dessincronização |
+| Precisão de CPU/GPU | Padrão/recomendado | Não desativar verificações de precisão globalmente |
+| Compilação/cache de shaders | Padrão e cache persistente habilitado, se disponível | Primeiro carregamento pode apresentar stutter |
+| Overclock/forçar clocks | Desativado | Evitar calor, consumo e throttling |
 
-## Compatibility
+## Compatibilidade e limites
 
-The emulator is capable of running most commercial games at full speed, provided you meet the necessary hardware requirements.
+- Vulkan 1.3 anunciado pelo driver não significa suporte a todas as extensões ou limites exigidos pelo emulador.
+- Mensagens como `wideLines` ausente ou limites de bindings insuficientes indicam recursos não expostos pelo driver. Não devem ser contornadas forçando recursos sem validação.
+- Turnip pode funcionar no Adreno 619, mas a compatibilidade depende da versão do driver, Android e build. Um driver que inicializa não prova estabilidade em jogos.
+- Opções experimentais como Fastmem/Host MMU, FMA/ASIMD inseguro, desativação de verificações de endereço ou alterações de sincronização devem permanecer nos padrões até teste individual. Podem produzir erros gráficos, corrupção ou encerramentos.
+- A resolução abaixo de 1x reduz carga de GPU, mas não corrige gargalos de CPU, emulação ou compilação de shaders.
 
-A list of supported games will be available in future. Please be patient.
+## Protocolo A/B obrigatório
 
-Check out our [website](https://eden-emu.dev) for the latest news on exciting features, monthly progress reports, and more!
+1. Escolher um jogo legalmente obtido e uma cena reproduzível de 3 a 5 minutos.
+2. Reiniciar o jogo entre testes e manter driver, resolução, energia e temperatura inicial tão semelhantes quanto possível.
+3. Alterar somente uma opção por vez.
+4. Registrar FPS médio, 1% low, frametime, temperatura, consumo de memória e ocorrência de falhas.
+5. Repetir cada cenário pelo menos três vezes.
+6. Rejeitar a alteração se melhorar FPS médio mas piorar muito o 1% low, causar artefatos, crash ou throttling.
+7. Repetir após 15–20 minutos para detectar perda de desempenho por aquecimento.
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/eden-emulator.svg)](https://repology.org/project/eden-emulator/versions)
+## O que ainda não está comprovado
 
-## Contribute
-
-To contribute to Eden; be it financially, code, bug reports, or otherwise, see our [Contributing guidelines](./CONTRIBUTING.md).
-
-## Documentation
-
-We have a user manual! See our [User Handbook](./docs/user/README.md).
-
-## Building
-
-See the [General Build Guide](docs/Build.md)
-
-For information on provided development tooling, see the [Tools directory](./tools)
-
-## Download
-
-You can download the latest releases from [our release page](https://git.eden-emu.dev/eden-emu/eden/releases).
-
-Save us some bandwidth! We have [mirrors available](./docs/user/ThirdParty.md#mirrors) as well.
-
-## License
-
-Eden is licensed under the GPLv3 (or any later version). Refer to the [LICENSE.txt](https://git.eden-emu.dev/eden-emu/eden/src/branch/master/LICENSE.txt) file.
-
-## Special thanks
-
-Super special thanks to Cloudflare for preventing the git server from blowing up.
-
-- Yuzu
-- Ryujinx
-- Sudachi
-- Citron
-- Torzu
-- Suyu
-- Ryubing
-
-And everyone who continues or had contributed to the project! <3
+Este repositório não contém, até o momento, benchmark controlado que demonstre ganhos próprios de CPU/GPU no M23. A seleção de configurações acima é ponto de partida para ensaios, não promessa de FPS ou compatibilidade universal.

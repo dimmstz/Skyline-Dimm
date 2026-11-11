@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialSharedAxis
 import org.yuzu.yuzu_emu.R
+import org.yuzu.yuzu_emu.ui.main.MainActivity
 import org.yuzu.yuzu_emu.databinding.FragmentSettingsBinding
 import org.yuzu.yuzu_emu.features.input.NativeInput
 import org.yuzu.yuzu_emu.features.settings.model.Settings
@@ -49,6 +50,14 @@ class SettingsFragment : Fragment() {
     private val args by navArgs<SettingsFragmentArgs>()
 
     private val settingsViewModel: SettingsViewModel by activityViewModels()
+
+    private val getProdKey = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            (activity as? MainActivity)?.processKey(uri, "keys")
+        }
+    }
 
     private val requestAllFilesPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -164,11 +173,18 @@ class SettingsFragment : Fragment() {
 
         if (args.menuTag == Settings.MenuTag.SECTION_ROOT) {
             binding.toolbarSettings.inflateMenu(R.menu.menu_settings)
+            binding.toolbarSettings.menu.findItem(R.id.action_install_prod_keys).isVisible =
+                args.game == null
             binding.toolbarSettings.setOnMenuItemClickListener {
                 when (it.itemId) {
                     R.id.action_search -> {
                         view.findNavController()
                             .navigate(R.id.action_settingsFragment_to_settingsSearchFragment)
+                        true
+                    }
+
+                    R.id.action_install_prod_keys -> {
+                        getProdKey.launch(arrayOf("*/*"))
                         true
                     }
 

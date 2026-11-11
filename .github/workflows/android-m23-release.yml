@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - main
+      - fix/m23-profile-and-ci
   push:
     branches:
       - main

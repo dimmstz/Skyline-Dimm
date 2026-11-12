@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: android-m23-release-${{ github.ref }}
+  group: android-m23-release-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

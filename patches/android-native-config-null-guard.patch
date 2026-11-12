@@ -11,7 +11,7 @@ diff --git a/src/android/app/src/main/AndroidManifest.xml b/src/android/app/src/
 diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
 --- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
 +++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
-@@ -159,3 +159,3 @@
+@@ -159,5 +159,5 @@
          setContentView(binding.root)
  
          val launchIntent = Intent(intent)

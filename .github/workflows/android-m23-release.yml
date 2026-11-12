@@ -96,12 +96,12 @@ jobs:
           git -C eden apply --check "${GITHUB_WORKSPACE}/patches/android-native-config-null-guard.patch"
           git -C eden apply "${GITHUB_WORKSPACE}/patches/android-native-config-null-guard.patch"
           git -C eden diff --check
-          grep -q "Ignoring global config save after config unload" eden/src/android/app/src/main/jni/native_config.cpp
-          grep -q "Ignoring controller config save without a loaded profile" eden/src/android/app/src/main/jni/native_config.cpp
-          grep -q "Limit{1, limits.maxViewports, \\"maxViewports\\"}" eden/src/video_core/vulkan_common/vulkan_device.cpp
-          grep -q "device.SupportsWideLines() ? requested_width : 1.0f" eden/src/video_core/renderer_vulkan/vk_rasterizer.cpp
-          grep -q "device.SupportsLogicOp() && dynamic.logic_op_enable" eden/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
-          grep -q "support_multi_viewport = device.SupportsMultiViewport()" eden/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+          grep -Fq "Ignoring global config save after config unload" eden/src/android/app/src/main/jni/native_config.cpp
+          grep -Fq "Ignoring controller config save without a loaded profile" eden/src/android/app/src/main/jni/native_config.cpp
+          grep -Fq 'Limit{1, limits.maxViewports, "maxViewports"}' eden/src/video_core/vulkan_common/vulkan_device.cpp
+          grep -Fq "device.SupportsWideLines() ? requested_width : 1.0f" eden/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+          grep -Fq "device.SupportsLogicOp() && dynamic.logic_op_enable" eden/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
+          grep -Fq "support_multi_viewport = device.SupportsMultiViewport()" eden/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
 
       - name: Install shader compiler tools
         run: |

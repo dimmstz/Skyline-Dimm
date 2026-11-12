@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - main
+      - fix/m23-profile-and-ci
 
 permissions:
   contents: write
@@ -64,7 +65,7 @@ jobs:
             test -n "${PR_HEAD_SHA}"
             git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${PR_HEAD_SHA}"
           else
-            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" main
+            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${GITHUB_REF_NAME}"
           fi
 
           SOURCE_SHA="$(git -C eden rev-parse FETCH_HEAD)"
@@ -83,10 +84,19 @@ jobs:
             git -C eden commit -m "Integrate Skyline-Dimm source with Galaxy M23 profile"
           fi
 
-          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
             AUTH_HEADER="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
             git -C eden -c http.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" push "https://github.com/${GITHUB_REPOSITORY}.git" HEAD:main
           fi
+
+      - name: Apply Android config lifecycle crash guard
+        run: |
+          set -euo pipefail
+          test -s "${GITHUB_WORKSPACE}/patches/android-native-config-null-guard.patch"
+          git -C eden apply "${GITHUB_WORKSPACE}/patches/android-native-config-null-guard.patch"
+          git -C eden diff --check
+          grep -q "Ignoring global config save after config unload" eden/src/android/app/src/main/jni/native_config.cpp
+          grep -q "Ignoring controller config save without a loaded profile" eden/src/android/app/src/main/jni/native_config.cpp
 
       - name: Install shader compiler tools
         run: |

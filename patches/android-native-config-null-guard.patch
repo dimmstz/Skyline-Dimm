@@ -1,3 +1,36 @@
+diff --git a/src/android/app/src/main/AndroidManifest.xml b/src/android/app/src/main/AndroidManifest.xml
+--- a/src/android/app/src/main/AndroidManifest.xml
++++ b/src/android/app/src/main/AndroidManifest.xml
+@@ -84,4 +84,4 @@
+             android:launchMode="singleTop"
+             android:supportsPictureInPicture="true"
+-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
++            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|touchscreen|colorMode|keyboard|keyboardHidden|navigation"
+             android:exported="true">
+
+diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
+--- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
++++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
+@@ -159,3 +159,3 @@
+         setContentView(binding.root)
+ 
+         val launchIntent = Intent(intent)
+-        val shouldDeferLaunchForSwap = hasEmulationSession && isSwapIntent(launchIntent)
++        val shouldDeferLaunchForSwap = savedInstanceState == null && hasEmulationSession && isSwapIntent(launchIntent)
+         if (shouldDeferLaunchForSwap) {
+
+diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
+--- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
++++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
+@@ -1174,6 +1174,7 @@
+     private fun addQuickSettings() {
+         binding.quickSettingsSheet.apply {
+             val container = binding.quickSettingsSheet.findViewById<ViewGroup>(R.id.quick_settings_container)
+             val isSharpnessFilterSelected = isSharpnessScalingFilterSelected()
+ 
++            container.isSaveFromParentEnabled = false
+             container.removeAllViews()
+ 
 diff --git a/src/android/app/src/main/jni/native_config.cpp b/src/android/app/src/main/jni/native_config.cpp
 --- a/src/android/app/src/main/jni/native_config.cpp
 +++ b/src/android/app/src/main/jni/native_config.cpp

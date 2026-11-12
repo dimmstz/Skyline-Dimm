@@ -8,4 +8,10 @@
         android:title="@string/home_search"
         app:showAsAction="always" />
 
+    <item
+        android:id="@+id/action_install_prod_keys"
+        android:icon="@drawable/ic_key"
+        android:title="@string/install_prod_keys"
+        app:showAsAction="never" />
+
 </menu>

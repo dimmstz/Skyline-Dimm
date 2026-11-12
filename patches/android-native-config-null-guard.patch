@@ -71,3 +71,80 @@ diff --git a/src/android/app/src/main/jni/native_config.cpp b/src/android/app/sr
      Settings::values.players.SetGlobal(false);
  
      // Clear all controls from the config in case the user reverted back to globals
+
+diff --git a/src/video_core/vulkan_common/vulkan_device.h b/src/video_core/vulkan_common/vulkan_device.h
+--- a/src/video_core/vulkan_common/vulkan_device.h
++++ b/src/video_core/vulkan_common/vulkan_device.h
+@@ -158,13 +158,10 @@
+-    FEATURE_NAME(features, logicOp)                                                                \
+     FEATURE_NAME(features, multiDrawIndirect)                                                      \
+-    FEATURE_NAME(features, multiViewport)                                                          \
+     FEATURE_NAME(features, occlusionQueryPrecise)                                                  \
+@@ -168,10 +165,8 @@
+     FEATURE_NAME(features, shaderStorageImageWriteWithoutFormat)                                   \
+     FEATURE_NAME(features, tessellationShader)                                                     \
+     FEATURE_NAME(features, vertexPipelineStoresAndAtomics)                                         \
+-    FEATURE_NAME(features, wideLines)                                                              \
+     FEATURE_NAME(host_query_reset, hostQueryReset)                                                 \
+-    FEATURE_NAME(shader_demote_to_helper_invocation, shaderDemoteToHelperInvocation)               \
+     FEATURE_NAME(shader_draw_parameters, shaderDrawParameters)                                     \
+@@ -827,7 +822,7 @@
+     bool SupportsDynamicState3LogicOpEnable() const {
+-        return dynamic_state3_logic_op_enable;
++        return dynamic_state3_logic_op_enable && features2.features.logicOp;
+     }
+@@ -1011,6 +1006,14 @@
+     bool SupportsMultiViewport() const {
+         return features2.features.multiViewport;
+     }
++
++    bool SupportsLogicOp() const {
++        return features2.features.logicOp;
++    }
++
++    bool SupportsWideLines() const {
++        return features2.features.wideLines;
++    }
+ 
+     /// Returns true if the device supports VK_KHR_maintenance1.
+     bool IsKhrMaintenance1Supported() const {
+diff --git a/src/video_core/vulkan_common/vulkan_device.cpp b/src/video_core/vulkan_common/vulkan_device.cpp
+--- a/src/video_core/vulkan_common/vulkan_device.cpp
++++ b/src/video_core/vulkan_common/vulkan_device.cpp
+@@ -1249,7 +1249,8 @@
+     const VkPhysicalDeviceLimits& limits{properties.properties.limits};
+     const std::array limits_report{
+                                    Limit{65536, limits.maxUniformBufferRange, "maxUniformBufferRange"},
+-                                   Limit{16, limits.maxViewports, "maxViewports"},
++                                   // A single viewport is sufficient when multiViewport is unavailable.
++                                   Limit{1, limits.maxViewports, "maxViewports"},
+                                    Limit{8, limits.maxColorAttachments, "maxColorAttachments"},
+                                    Limit{8, limits.maxClipDistances, "maxClipDistances"},
+                                    };
+diff --git a/src/video_core/renderer_vulkan/vk_rasterizer.cpp b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+--- a/src/video_core/renderer_vulkan/vk_rasterizer.cpp
++++ b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+@@ -1571,8 +1571,10 @@
+ void RasterizerVulkan::UpdateLineWidth(Tegra::Engines::Maxwell3D::Regs& regs) {
+     if (!state_tracker.TouchLineWidth()) {
+         return;
+     }
+-    const float width =
++    const float requested_width =
+         regs.line_anti_alias_enable ? regs.line_width_smooth : regs.line_width_aliased;
++    // Vulkan requires a line width of exactly 1.0 when wideLines is unsupported.
++    const float width = device.SupportsWideLines() ? requested_width : 1.0f;
+     scheduler.Record([width](vk::CommandBuffer cmdbuf) { cmdbuf.SetLineWidth(width); });
+ }
+diff --git a/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp b/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
+--- a/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
++++ b/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
+@@ -981,7 +981,7 @@
+         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+         .pNext = nullptr,
+         .flags = 0,
+-        .logicOpEnable = dynamic.logic_op_enable != 0,
++        .logicOpEnable = device.SupportsLogicOp() && dynamic.logic_op_enable != 0,
+         .logicOp = static_cast<VkLogicOp>(dynamic.logic_op.Value()),
+         .attachmentCount = static_cast<u32>(cb_attachments.size()),
+         .pAttachments = cb_attachments.data(),

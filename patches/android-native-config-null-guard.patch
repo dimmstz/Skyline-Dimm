@@ -103,10 +103,14 @@ diff --git a/src/video_core/vulkan_common/vulkan_device.h b/src/video_core/vulka
 diff --git a/src/video_core/vulkan_common/vulkan_device.cpp b/src/video_core/vulkan_common/vulkan_device.cpp
 --- a/src/video_core/vulkan_common/vulkan_device.cpp
 +++ b/src/video_core/vulkan_common/vulkan_device.cpp
-@@ -1252,1 +1252,2 @@
+@@ -1249,5 +1249,6 @@
+     const VkPhysicalDeviceLimits& limits{properties.properties.limits};
+     const std::array limits_report{
+                                    Limit{65536, limits.maxUniformBufferRange, "maxUniformBufferRange"},
 -                                   Limit{16, limits.maxViewports, "maxViewports"},
 +                                   // A single viewport is sufficient when multiViewport is unavailable.
 +                                   Limit{1, limits.maxViewports, "maxViewports"},
+                                    Limit{8, limits.maxColorAttachments, "maxColorAttachments"},
 diff --git a/src/video_core/renderer_vulkan/vk_rasterizer.cpp b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
 --- a/src/video_core/renderer_vulkan/vk_rasterizer.cpp
 +++ b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
@@ -120,6 +124,12 @@ diff --git a/src/video_core/renderer_vulkan/vk_rasterizer.cpp b/src/video_core/r
 diff --git a/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp b/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
 --- a/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
 +++ b/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
-@@ -984,1 +984,1 @@
+@@ -980,7 +980,7 @@
+     const VkPipelineColorBlendStateCreateInfo color_blend_ci{
+         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+         .pNext = nullptr,
+         .flags = 0,
 -        .logicOpEnable = dynamic.logic_op_enable != 0,
 +        .logicOpEnable = device.SupportsLogicOp() && dynamic.logic_op_enable != 0,
+         .logicOp = static_cast<VkLogicOp>(dynamic.logic_op.Value()),
+         .attachmentCount = static_cast<u32>(cb_attachments.size()),

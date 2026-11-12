@@ -73,20 +73,12 @@ jobs:
           grep -q "package: name='dev.legacy.eden_emulator'" ../apk-badging.txt
           grep -q "^native-code: 'arm64-v8a'" ../apk-badging.txt
 
-      - name: Package exact baseline source
-        working-directory: eden
-        run: |
-          set -euo pipefail
-          zip -qr ../Eden-v0.2.0-rc1-source.zip . -x ".git/*" "*/.git/*" "build/*" "*/build/*" "artifacts/*" "*/artifacts/*" ".gradle/*" "*/.gradle/*"
-          test -s ../Eden-v0.2.0-rc1-source.zip
-
-      - name: Upload baseline APK, source and validation
+      - name: Upload baseline APK and validation
         uses: actions/upload-artifact@v4
         with:
           name: eden-v0.2.0-rc1-m23-baseline
           path: |
             eden/artifacts/app-legacy-release.apk
-            Eden-v0.2.0-rc1-source.zip
             upstream-commit.txt
             apk-badging.txt
             apk-signature.txt

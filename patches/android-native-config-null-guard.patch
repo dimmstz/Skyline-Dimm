@@ -8,7 +8,6 @@ diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/Emulatio
 -        val shouldDeferLaunchForSwap = hasEmulationSession && isSwapIntent(launchIntent)
 +        val shouldDeferLaunchForSwap = savedInstanceState == null && hasEmulationSession && isSwapIntent(launchIntent)
          if (shouldDeferLaunchForSwap) {
-
 diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
 --- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
 +++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
@@ -61,7 +60,6 @@ diff --git a/src/android/app/src/main/jni/native_config.cpp b/src/android/app/sr
      Settings::values.players.SetGlobal(false);
  
      // Clear all controls from the config in case the user reverted back to globals
-
 diff --git a/src/video_core/vulkan_common/vulkan_device.h b/src/video_core/vulkan_common/vulkan_device.h
 --- a/src/video_core/vulkan_common/vulkan_device.h
 +++ b/src/video_core/vulkan_common/vulkan_device.h
@@ -83,7 +81,6 @@ diff --git a/src/video_core/vulkan_common/vulkan_device.h b/src/video_core/vulka
 -        return features.extended_dynamic_state2.extendedDynamicState2LogicOp;
 +        return features.extended_dynamic_state2.extendedDynamicState2LogicOp && features2.features.logicOp;
      }
-
 @@ -830,3 +826,3 @@
      bool SupportsDynamicState3LogicOpEnable() const {
 -        return dynamic_state3_logic_op_enable;

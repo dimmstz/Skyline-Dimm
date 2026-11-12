@@ -1,0 +1,85 @@
+name: Android M23 Baseline v0.2.0-rc1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/m23-profile-and-ci
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-m23-v020-baseline-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  build-baseline:
+    name: Build unmodified Eden v0.2.0-rc1 Android Legacy ARM64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools"
+
+      - name: Install Android NDK and CMake
+        run: |
+          sdkmanager --install "platforms;android-35" "ndk;30.0.16138531" "cmake;3.31.6" "build-tools;36.0.0"
+
+      - name: Clone exact stable reference tag
+        run: |
+          set -euo pipefail
+          git clone --recursive --branch v0.2.0-rc1 https://git.eden-emu.dev/eden-emu/eden.git eden
+          git -C eden rev-parse HEAD | tee upstream-commit.txt
+          git -C eden submodule status --recursive
+
+      - name: Install shader compiler tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes glslang-tools zip ccache
+          glslangValidator --version
+
+      - name: Build Android Legacy Release ARM64
+        working-directory: eden
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.16138531
+          CCACHE: "true"
+        run: |
+          set -euo pipefail
+          chmod +x .ci/android/build.sh
+          .ci/android/build.sh --release --target legacy --build-type Release
+
+      - name: Validate baseline APK
+        working-directory: eden
+        run: |
+          set -euo pipefail
+          APK="artifacts/app-legacy-release.apk"
+          test -s "${APK}"
+          TOOLS="${ANDROID_HOME}/build-tools/36.0.0"
+          "${TOOLS}/aapt" dump badging "${APK}" | tee ../apk-badging.txt
+          "${TOOLS}/zipalign" -c -v 4 "${APK}"
+          "${TOOLS}/apksigner" verify --verbose --print-certs "${APK}" | tee ../apk-signature.txt
+          grep -q "^sdkVersion:'24'" ../apk-badging.txt
+          grep -q "package: name='dev.legacy.eden_emulator'" ../apk-badging.txt
+          grep -q "^native-code: 'arm64-v8a'" ../apk-badging.txt
+
+      - name: Upload baseline APK and validation
+        uses: actions/upload-artifact@v4
+        with:
+          name: eden-v0.2.0-rc1-m23-baseline
+          path: |
+            eden/artifacts/app-legacy-release.apk
+            upstream-commit.txt
+            apk-badging.txt
+            apk-signature.txt
+          retention-days: 30

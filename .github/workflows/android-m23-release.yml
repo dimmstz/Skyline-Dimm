@@ -2,22 +2,25 @@ name: Android M23 Release
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - fix/m23-profile-and-ci
   push:
     branches:
       - main
-    paths:
-      - ".github/workflows/android-m23-release.yml"
-      - "README.md"
+      - fix/m23-profile-and-ci
 
 permissions:
   contents: write
 
 concurrency:
-  group: android-m23-release-${{ github.ref }}
+  group: android-m23-release-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
   build-release:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     name: Import Eden source and build Android Legacy Release (ARM64)
     runs-on: ubuntu-24.04
     timeout-minutes: 240
@@ -49,31 +52,62 @@ jobs:
           git -C eden rev-parse HEAD | tee upstream-commit.txt
           git -C eden submodule status --recursive
 
-      - name: Merge complete Eden source into Skyline-Dimm main
+      - name: Integrate Skyline-Dimm source and M23 profile
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           git -C eden config user.name "github-actions[bot]"
           git -C eden config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
-          git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
-          git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
-          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml
-          cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
-          cp README.md eden/M23-PERFORMANCE-PROFILE.md
-          git -C eden add .github/workflows/android-m23-release.yml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
-          if ! git -C eden diff --cached --quiet; then
-            git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
+
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            test -n "${PR_HEAD_SHA}"
+            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${PR_HEAD_SHA}"
+          else
+            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${GITHUB_REF_NAME}"
           fi
-          AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+
+          SOURCE_SHA="$(git -C eden rev-parse FETCH_HEAD)"
+          git -C eden show "${SOURCE_SHA}:README.md" > /tmp/skyline-readme.md
+          git -C eden merge --allow-unrelated-histories --no-edit -X ours "${SOURCE_SHA}"
+          git -C eden checkout "${SOURCE_SHA}" -- .github/workflows/android-m23-release.yml
+
+          if git -C eden cat-file -e "${SOURCE_SHA}:M23-PERFORMANCE-PROFILE.md" 2>/dev/null; then
+            git -C eden show "${SOURCE_SHA}:M23-PERFORMANCE-PROFILE.md" > M23-PERFORMANCE-PROFILE.md
+            cp M23-PERFORMANCE-PROFILE.md eden/M23-PERFORMANCE-PROFILE.md
+          fi
+
+          cp /tmp/skyline-readme.md eden/README-SKYLINE.md
+          git -C eden add .github/workflows/android-m23-release.yml README-SKYLINE.md M23-PERFORMANCE-PROFILE.md
+          if ! git -C eden diff --cached --quiet; then
+            git -C eden commit -m "Integrate Skyline-Dimm source with Galaxy M23 profile"
+          fi
+
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${GITHUB_REF_NAME}" = "main" ]; then
+            AUTH_HEADER="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
+            git -C eden -c http.extraheader="AUTHORIZATION: basic ${AUTH_HEADER}" push "https://github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+          fi
+
+      - name: Apply Android config lifecycle crash guard
+        run: |
+          set -euo pipefail
+          test -s "${GITHUB_WORKSPACE}/patches/android-native-config-null-guard.patch"
+          git -C eden apply --check "${GITHUB_WORKSPACE}/patches/android-native-config-null-guard.patch"
+          git -C eden apply "${GITHUB_WORKSPACE}/patches/android-native-config-null-guard.patch"
+          git -C eden diff --check
+          grep -Fq "Ignoring global config save after config unload" eden/src/android/app/src/main/jni/native_config.cpp
+          grep -Fq "Ignoring controller config save without a loaded profile" eden/src/android/app/src/main/jni/native_config.cpp
+          grep -Fq 'Limit{1, limits.maxViewports, "maxViewports"}' eden/src/video_core/vulkan_common/vulkan_device.cpp
+          grep -Fq "device.SupportsWideLines() ? requested_width : 1.0f" eden/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+          grep -Fq "device.SupportsLogicOp() && dynamic.logic_op_enable" eden/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
+          grep -Fq "support_multi_viewport = device.SupportsMultiViewport()" eden/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
 
       - name: Install shader compiler tools
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install --yes glslang-tools
+          sudo apt-get install --yes glslang-tools zip
           command -v glslangValidator
           glslangValidator --version
 
@@ -100,13 +134,15 @@ jobs:
         run: |
           set -euo pipefail
           APK="artifacts/app-legacy-release.apk"
-          test -s "$APK"
-          TOOLS="$ANDROID_HOME/build-tools/36.0.0"
-          "$TOOLS/aapt" dump badging "$APK" | tee ../apk-badging.txt
-          "$TOOLS/zipalign" -c -v 4 "$APK"
-          "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee ../apk-signature.txt
+          test -s "${APK}"
+          TOOLS="${ANDROID_HOME}/build-tools/36.0.0"
+          "${TOOLS}/aapt" dump badging "${APK}" | tee ../apk-badging.txt
+          "${TOOLS}/zipalign" -c -v 4 "${APK}"
+          "${TOOLS}/apksigner" verify --verbose --print-certs "${APK}" | tee ../apk-signature.txt
           grep -q "^sdkVersion:'29'" ../apk-badging.txt
-          unzip -Z1 "$APK" | tee ../apk-contents.txt
+          grep -q "package: name='dev.legacy.eden_emulator'" ../apk-badging.txt
+          grep -q "^native-code: 'arm64-v8a'" ../apk-badging.txt
+          unzip -Z1 "${APK}" | tee ../apk-contents.txt
           grep -q '^lib/arm64-v8a/' ../apk-contents.txt
 
       - name: Upload APK and validation reports
@@ -115,10 +151,23 @@ jobs:
         with:
           name: skyline-dimm-m23-release-${{ github.run_number }}
           path: |
-            eden/artifacts/**
+            eden/artifacts/app-legacy-release.apk
             upstream-commit.txt
             apk-badging.txt
             apk-signature.txt
             apk-contents.txt
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publish GitHub prerelease with APK only
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/fix/m23-profile-and-ci'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: m23-preview-${{ github.run_number }}
+          name: Skyline-Dimm M23 Preview #${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            eden/artifacts/app-legacy-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,135 @@
+diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
+--- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
++++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/EmulationActivity.kt
+@@ -159,5 +159,5 @@
+         setContentView(binding.root)
+ 
+         val launchIntent = Intent(intent)
+-        val shouldDeferLaunchForSwap = hasEmulationSession && isSwapIntent(launchIntent)
++        val shouldDeferLaunchForSwap = savedInstanceState == null && hasEmulationSession && isSwapIntent(launchIntent)
+         if (shouldDeferLaunchForSwap) {
+diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
+--- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
++++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
+@@ -1174,7 +1174,8 @@
+     private fun addQuickSettings() {
+         binding.quickSettingsSheet.apply {
+             val container = binding.quickSettingsSheet.findViewById<ViewGroup>(R.id.quick_settings_container)
+             val isSharpnessFilterSelected = isSharpnessScalingFilterSelected()
+ 
++            container.isSaveFromParentEnabled = false
+             container.removeAllViews()
+ 
+diff --git a/src/android/app/src/main/jni/native_config.cpp b/src/android/app/src/main/jni/native_config.cpp
+--- a/src/android/app/src/main/jni/native_config.cpp
++++ b/src/android/app/src/main/jni/native_config.cpp
+@@ -62,5 +62,9 @@
+ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_reloadGlobalConfig(JNIEnv* env, jobject obj) {
++    if (!global_config) {
++        LOG_WARNING(Frontend, "[Android Native] Ignoring global config reload before initialization");
++        return;
++    }
+     global_config->AndroidConfig::ReloadAllValues();
+     ResetFxChainToGlobal();
+ }
+ 
+@@ -67,4 +71,8 @@
+ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_saveGlobalConfig(JNIEnv* env, jobject obj) {
++    if (!global_config) {
++        LOG_WARNING(Frontend, "[Android Native] Ignoring global config save after config unload");
++        return;
++    }
+     global_config->AndroidConfig::SaveAllValues();
+ }
+ 
+@@ -86,4 +94,8 @@
+ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_savePerGameConfig(JNIEnv* env, jobject obj) {
++    if (!per_game_config) {
++        LOG_WARNING(Frontend, "[Android Native] Ignoring per-game config save without a loaded profile");
++        return;
++    }
+     per_game_config->AndroidConfig::SaveAllValues();
+ }
+ 
+@@ -575,4 +587,8 @@
+ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_saveControlPlayerValues(JNIEnv* env, jobject obj) {
++    if (!per_game_config) {
++        LOG_WARNING(Frontend, "[Android Native] Ignoring controller config save without a loaded profile");
++        return;
++    }
+     Settings::values.players.SetGlobal(false);
+ 
+     // Clear all controls from the config in case the user reverted back to globals
+diff --git a/src/video_core/vulkan_common/vulkan_device.h b/src/video_core/vulkan_common/vulkan_device.h
+--- a/src/video_core/vulkan_common/vulkan_device.h
++++ b/src/video_core/vulkan_common/vulkan_device.h
+@@ -158,4 +158,2 @@
+-    FEATURE_NAME(features, logicOp)                                                                \
+     FEATURE_NAME(features, multiDrawIndirect)                                                      \
+-    FEATURE_NAME(features, multiViewport)                                                          \
+     FEATURE_NAME(features, occlusionQueryPrecise)                                                  \
+@@ -168,7 +166,5 @@
+     FEATURE_NAME(features, shaderStorageImageWriteWithoutFormat)                                   \
+     FEATURE_NAME(features, tessellationShader)                                                     \
+     FEATURE_NAME(features, vertexPipelineStoresAndAtomics)                                         \
+-    FEATURE_NAME(features, wideLines)                                                              \
+     FEATURE_NAME(host_query_reset, hostQueryReset)                                                 \
+-    FEATURE_NAME(shader_demote_to_helper_invocation, shaderDemoteToHelperInvocation)               \
+     FEATURE_NAME(shader_draw_parameters, shaderDrawParameters)                                     \
+@@ -772,3 +768,3 @@
+     bool IsExtExtendedDynamicState2ExtrasSupported() const {
+-        return features.extended_dynamic_state2.extendedDynamicState2LogicOp;
++        return features.extended_dynamic_state2.extendedDynamicState2LogicOp && features2.features.logicOp;
+     }
+@@ -830,3 +826,3 @@
+     bool SupportsDynamicState3LogicOpEnable() const {
+-        return dynamic_state3_logic_op_enable;
++        return dynamic_state3_logic_op_enable && features2.features.logicOp;
+     }
+@@ -1013,5 +1009,13 @@
+     bool SupportsMultiViewport() const {
+         return features2.features.multiViewport;
+     }
++
++    bool SupportsLogicOp() const {
++        return features2.features.logicOp;
++    }
++
++    bool SupportsWideLines() const {
++        return features2.features.wideLines;
++    }
+ 
+     /// Returns true if the device supports VK_KHR_maintenance1.
+diff --git a/src/video_core/vulkan_common/vulkan_device.cpp b/src/video_core/vulkan_common/vulkan_device.cpp
+--- a/src/video_core/vulkan_common/vulkan_device.cpp
++++ b/src/video_core/vulkan_common/vulkan_device.cpp
+@@ -1249,5 +1249,6 @@
+     const VkPhysicalDeviceLimits& limits{properties.properties.limits};
+     const std::array limits_report{
+                                    Limit{65536, limits.maxUniformBufferRange, "maxUniformBufferRange"},
+-                                   Limit{16, limits.maxViewports, "maxViewports"},
++                                   // A single viewport is sufficient when multiViewport is unavailable.
++                                   Limit{1, limits.maxViewports, "maxViewports"},
+                                    Limit{8, limits.maxColorAttachments, "maxColorAttachments"},
+diff --git a/src/video_core/renderer_vulkan/vk_rasterizer.cpp b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+--- a/src/video_core/renderer_vulkan/vk_rasterizer.cpp
++++ b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+@@ -1575,3 +1575,5 @@
+-    const float width =
++    const float requested_width =
+         regs.line_anti_alias_enable ? regs.line_width_smooth : regs.line_width_aliased;
++    // Vulkan requires a line width of exactly 1.0 when wideLines is unsupported.
++    const float width = device.SupportsWideLines() ? requested_width : 1.0f;
+     scheduler.Record([width](vk::CommandBuffer cmdbuf) { cmdbuf.SetLineWidth(width); });
+diff --git a/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp b/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
+--- a/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
++++ b/src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
+@@ -980,7 +980,7 @@
+     const VkPipelineColorBlendStateCreateInfo color_blend_ci{
+         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+         .pNext = nullptr,
+         .flags = 0,
+-        .logicOpEnable = dynamic.logic_op_enable != 0,
++        .logicOpEnable = device.SupportsLogicOp() && dynamic.logic_op_enable != 0,
+         .logicOp = static_cast<VkLogicOp>(dynamic.logic_op.Value()),
+         .attachmentCount = static_cast<u32>(cb_attachments.size()),

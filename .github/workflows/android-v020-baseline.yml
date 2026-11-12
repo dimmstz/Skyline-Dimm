@@ -69,7 +69,7 @@ jobs:
           "${TOOLS}/aapt" dump badging "${APK}" | tee ../apk-badging.txt
           "${TOOLS}/zipalign" -c -v 4 "${APK}"
           "${TOOLS}/apksigner" verify --verbose --print-certs "${APK}" | tee ../apk-signature.txt
-          grep -q "^sdkVersion:'29'" ../apk-badging.txt
+          grep -q "^sdkVersion:'24'" ../apk-badging.txt
           grep -q "package: name='dev.legacy.eden_emulator'" ../apk-badging.txt
           grep -q "^native-code: 'arm64-v8a'" ../apk-badging.txt
 

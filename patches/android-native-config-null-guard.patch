@@ -22,7 +22,7 @@ diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/activities/Emulatio
 diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
 --- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
 +++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/fragments/EmulationFragment.kt
-@@ -1174,6 +1174,7 @@
+@@ -1174,7 +1174,8 @@
      private fun addQuickSettings() {
          binding.quickSettingsSheet.apply {
              val container = binding.quickSettingsSheet.findViewById<ViewGroup>(R.id.quick_settings_container)
@@ -62,7 +62,7 @@ diff --git a/src/android/app/src/main/jni/native_config.cpp b/src/android/app/sr
      per_game_config->AndroidConfig::SaveAllValues();
  }
  
-@@ -575,6 +587,10 @@
+@@ -575,4 +587,8 @@
  void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_saveControlPlayerValues(JNIEnv* env, jobject obj) {
 +    if (!per_game_config) {
 +        LOG_WARNING(Frontend, "[Android Native] Ignoring controller config save without a loaded profile");

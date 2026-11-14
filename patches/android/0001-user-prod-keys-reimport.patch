@@ -29,7 +29,7 @@ diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/u
  
      private val requestAllFilesPermissionLauncher = registerForActivityResult(
          ActivityResultContracts.StartActivityForResult()
-@@ -164,6 +178,10 @@
+@@ -164,7 +178,11 @@
                          view.findNavController()
                              .navigate(R.id.action_settingsFragment_to_settingsSearchFragment)
                          true
@@ -57,7 +57,7 @@ diff --git a/src/android/app/src/main/res/menu/menu_settings.xml b/src/android/a
 diff --git a/src/android/app/src/main/res/values/strings.xml b/src/android/app/src/main/res/values/strings.xml
 --- a/src/android/app/src/main/res/values/strings.xml
 +++ b/src/android/app/src/main/res/values/strings.xml
-@@ -452,6 +452,7 @@
+@@ -452,5 +452,6 @@
  
      <string name="keys_failed">Failed to Install Keys</string>
      <string name="keys_install_success">Keys successfully installed</string>

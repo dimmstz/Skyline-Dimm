@@ -8,6 +8,7 @@ on:
     paths:
       - ".github/workflows/android-m23-release.yml"
       - "README.md"
+      - "patches/android/**"
 
 permissions:
   contents: write
@@ -68,6 +69,15 @@ jobs:
           fi
           AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
           git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+
+      - name: Apply Skyline-Dimm Android patches
+        working-directory: eden
+        run: |
+          set -euo pipefail
+          PATCH="patches/android/0001-user-prod-keys-reimport.patch"
+          test -s "$PATCH"
+          git apply --check "$PATCH"
+          git apply "$PATCH"
 
       - name: Install shader compiler tools
         run: |

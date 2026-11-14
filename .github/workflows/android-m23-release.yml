@@ -74,10 +74,16 @@ jobs:
         working-directory: eden
         run: |
           set -euo pipefail
+          # The upstream checkout may not contain overlay-only files from the
+          # Skyline-Dimm checkout. Copy the tracked patch explicitly.
+          mkdir -p patches/android
+          cp ../patches/android/0001-user-prod-keys-reimport.patch patches/android/
           PATCH="patches/android/0001-user-prod-keys-reimport.patch"
           test -s "$PATCH"
           git apply --check "$PATCH"
           git apply "$PATCH"
+          grep -q 'action_replace_prod_keys' src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
+          grep -q 'replace_prod_keys' src/android/app/src/main/res/values/strings.xml
 
       - name: Install shader compiler tools
         run: |

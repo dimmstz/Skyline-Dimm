@@ -2,6 +2,13 @@ name: Android M23 Release
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/android-m23-release.yml"
+      - "README.md"
+      - "patches/android/**"
   push:
     branches:
       - main
@@ -11,7 +18,7 @@ on:
       - "patches/android/**"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: android-m23-release-${{ github.ref }}
@@ -46,29 +53,10 @@ jobs:
       - name: Clone Eden upstream with recursive submodules
         run: |
           set -euo pipefail
-          git clone --recursive --branch master https://git.eden-emu.dev/eden-emu/eden.git eden
+          git clone --recursive --branch v0.2.0-rc1 https://git.eden-emu.dev/eden-emu/eden.git eden
+          test "$(git -C eden describe --tags --exact-match)" = "v0.2.0-rc1"
           git -C eden rev-parse HEAD | tee upstream-commit.txt
           git -C eden submodule status --recursive
-
-      - name: Merge complete Eden source into Skyline-Dimm main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          git -C eden config user.name "github-actions[bot]"
-          git -C eden config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
-          git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
-          git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
-          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml
-          cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
-          cp README.md eden/M23-PERFORMANCE-PROFILE.md
-          git -C eden add .github/workflows/android-m23-release.yml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
-          if ! git -C eden diff --cached --quiet; then
-            git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
-          fi
-          AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
 
       - name: Apply Skyline-Dimm Android patches
         working-directory: eden

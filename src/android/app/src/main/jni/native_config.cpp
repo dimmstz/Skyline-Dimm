@@ -32,6 +32,49 @@ static void ResetFxChainToGlobal() {
 static void ResetFxChainToGlobal() {}
 #endif
 
+// Device-oriented presets. These change only renderer settings with predictable
+// performance implications; unsafe CPU/GPU hacks and clock forcing are excluded.
+static void ApplyHardwareProfile(s32 profile) {
+    if (profile < 0 || profile > 2) {
+        profile = 0;
+    }
+
+    AndroidSettings::values.hardware_profile.SetValue(profile);
+
+    // Keep the safe baseline common to all M23 profiles.
+    Settings::values.use_asynchronous_gpu_emulation.SetValue(true);
+    Settings::values.use_disk_shader_cache.SetValue(true);
+    Settings::values.use_vulkan_driver_pipeline_cache.SetValue(true);
+    Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::Low);
+    Settings::values.max_anisotropy.SetValue(Settings::AnisotropyMode::Default);
+
+    switch (profile) {
+    case 0: // Performance: lower pixel cost, avoid shader pop-in.
+        Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res1_2X);
+        Settings::values.use_asynchronous_shaders.SetValue(false);
+        AndroidSettings::values.pipeline_worker_count.SetValue(4);
+        break;
+    case 1: // Balanced: moderate resolution and moderate background compilation.
+        Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res3_4X);
+        Settings::values.use_asynchronous_shaders.SetValue(false);
+        AndroidSettings::values.pipeline_worker_count.SetValue(3);
+        break;
+    case 2: // Hardcore: lowest resolution and more aggressive shader throughput.
+        Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res1_4X);
+        Settings::values.use_asynchronous_shaders.SetValue(true);
+        AndroidSettings::values.pipeline_worker_count.SetValue(6);
+        break;
+    }
+
+    LOG_INFO(Frontend,
+             "[Skyline-Dimm] Hardware profile applied: profile={}, resolution={}, async_shaders={}, "
+             "async_gpu=true, pipeline_workers={}",
+             profile,
+             static_cast<u32>(Settings::values.resolution_setup.GetValue()),
+             Settings::values.use_asynchronous_shaders.GetValue(),
+             AndroidSettings::values.pipeline_worker_count.GetValue());
+}
+
 template <typename T>
 Settings::Setting<T>* getSetting(JNIEnv* env, jstring jkey) {
     auto key = Common::Android::GetJString(env, jkey);
@@ -52,6 +95,7 @@ extern "C" {
 void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_initializeGlobalConfig(JNIEnv* env, jobject obj) {
     global_config = std::make_unique<AndroidConfig>();
     FrontendCommon::GenerateSettings();
+    ApplyHardwareProfile(AndroidSettings::values.hardware_profile.GetValue());
     ResetFxChainToGlobal();
 }
 
@@ -61,6 +105,7 @@ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_unloadGlobalConfig(JNIEnv* env, 
 
 void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_reloadGlobalConfig(JNIEnv* env, jobject obj) {
     global_config->AndroidConfig::ReloadAllValues();
+    ApplyHardwareProfile(AndroidSettings::values.hardware_profile.GetValue());
     ResetFxChainToGlobal();
 }
 
@@ -80,8 +125,9 @@ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_initializePerGameConfig(JNIEnv* 
     // Emit the effective per-game values so device logs can confirm that the
     // Android switches actually reach the native renderer configuration.
     LOG_INFO(Frontend,
-             "[Skyline-Dimm] Active game config: mode={}, async_shaders={}, async_gpu={}, "
-             "disk_shader_cache={}, vulkan_pipeline_cache={}, pipeline_workers={}",
+             "[Skyline-Dimm] Active game config: profile={}, mode={}, async_shaders={}, async_gpu={}, "
+             "disk_shader_cache={}, vulkan_pipeline_cache={}, pipeline_workers={}, resolution={}",
+             AndroidSettings::values.hardware_profile.GetValue(),
              Settings::values.use_docked_mode.GetValue() == Settings::ConsoleMode::Docked
                  ? "TV/Docked"
                  : "Handheld",
@@ -89,7 +135,8 @@ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_initializePerGameConfig(JNIEnv* 
              Settings::values.use_asynchronous_gpu_emulation.GetValue(),
              Settings::values.use_disk_shader_cache.GetValue(),
              Settings::values.use_vulkan_driver_pipeline_cache.GetValue(),
-             AndroidSettings::values.pipeline_worker_count.GetValue());
+             AndroidSettings::values.pipeline_worker_count.GetValue(),
+             static_cast<u32>(Settings::values.resolution_setup.GetValue()));
 }
 
 jboolean Java_org_yuzu_yuzu_1emu_utils_NativeConfig_isPerGameConfigLoaded(JNIEnv* env,
@@ -204,11 +251,19 @@ jint Java_org_yuzu_yuzu_1emu_utils_NativeConfig_getInt(JNIEnv* env, jobject obj,
 
 void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_setInt(JNIEnv* env, jobject obj, jstring jkey,
                                                        jint value) {
+    const auto key = Common::Android::GetJString(env, jkey);
     auto setting = getSetting<int>(env, jkey);
     if (setting == nullptr) {
         return;
     }
     setting->SetValue(value);
+
+    if (key == "hardware_profile") {
+        ApplyHardwareProfile(value);
+        if (global_config != nullptr && per_game_config == nullptr) {
+            global_config->AndroidConfig::SaveAllValues();
+        }
+    }
 }
 
 jfloat Java_org_yuzu_yuzu_1emu_utils_NativeConfig_getFloat(JNIEnv* env, jobject obj, jstring jkey,

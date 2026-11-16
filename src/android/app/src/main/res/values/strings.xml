@@ -1942,4 +1942,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="add_folders">Add Folder</string>
     <string name="percent">%1$d%%</string>
 
+    <string name="hardware_profile_title">Perfil de hardware</string>
+    <string name="hardware_profile_performance">Desempenho</string>
+    <string name="hardware_profile_balanced">Balanceado</string>
+    <string name="hardware_profile_hardcore">Hardcore</string>
+    <string name="hardware_profile_current">Perfil ativo: %1$s. Toque para alterar.</string>
+    <string name="hardware_profile_applied">Perfil aplicado: %1$s</string>
 </resources>

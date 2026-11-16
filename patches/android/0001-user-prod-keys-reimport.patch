@@ -1,0 +1,66 @@
+diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt b/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
+--- a/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
++++ b/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
+@@ -32,6 +32,7 @@
+ import org.yuzu.yuzu_emu.features.settings.model.Settings
+ import org.yuzu.yuzu_emu.features.settings.model.view.PathSetting
+ import org.yuzu.yuzu_emu.fragments.MessageDialogFragment
++import org.yuzu.yuzu_emu.model.GamesViewModel
+ import org.yuzu.yuzu_emu.utils.PathUtil
+ import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
+ import org.yuzu.yuzu_emu.utils.*
+@@ -49,6 +50,19 @@
+     private val args by navArgs<SettingsFragmentArgs>()
+ 
+     private val settingsViewModel: SettingsViewModel by activityViewModels()
++    private val gamesViewModel: GamesViewModel by activityViewModels()
++
++    private val prodKeysPickerLauncher =
++        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
++            if (uri != null) {
++                InstallableActions.processKey(
++                    activity = requireActivity(),
++                    fragmentManager = parentFragmentManager,
++                    gamesViewModel = gamesViewModel,
++                    result = uri
++                )
++            }
++        }
+ 
+     private val requestAllFilesPermissionLauncher = registerForActivityResult(
+         ActivityResultContracts.StartActivityForResult()
+@@ -164,7 +178,11 @@
+                         view.findNavController()
+                             .navigate(R.id.action_settingsFragment_to_settingsSearchFragment)
+                         true
+                     }
++                    R.id.action_replace_prod_keys -> {
++                        prodKeysPickerLauncher.launch(arrayOf("*/*"))
++                        true
++                    }
+ 
+                     else -> false
+                 }
+diff --git a/src/android/app/src/main/res/menu/menu_settings.xml b/src/android/app/src/main/res/menu/menu_settings.xml
+--- a/src/android/app/src/main/res/menu/menu_settings.xml
++++ b/src/android/app/src/main/res/menu/menu_settings.xml
+@@ -9,4 +9,9 @@
+         android:title="@string/home_search"
+         app:showAsAction="always" />
+ 
++    <item
++        android:id="@+id/action_replace_prod_keys"
++        android:title="@string/replace_prod_keys"
++        app:showAsAction="never" />
++
+ </menu>
+diff --git a/src/android/app/src/main/res/values/strings.xml b/src/android/app/src/main/res/values/strings.xml
+--- a/src/android/app/src/main/res/values/strings.xml
++++ b/src/android/app/src/main/res/values/strings.xml
+@@ -452,5 +452,6 @@
+ 
+     <string name="keys_failed">Failed to Install Keys</string>
+     <string name="keys_install_success">Keys successfully installed</string>
++    <string name="replace_prod_keys">Import / replace prod.keys</string>
+     <string name="error_keys_copy_failed">One or more keys failed to copy.</string>
+     <string name="error_keys_invalid_filename">Verify your keys file has a .keys extension and try again.</string>

@@ -9,6 +9,7 @@ on:
       - ".github/workflows/android-m23-release.yml"
       - "README.md"
       - "patches/android/**"
+      - "src/**"
   push:
     branches:
       - main
@@ -17,6 +18,7 @@ on:
       - ".github/workflows/android-m23-release.yml"
       - "README.md"
       - "patches/android/**"
+      - "src/**"
 
 # Release creation is limited to successful pushes on recovery branches.
 permissions:
@@ -43,6 +45,9 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Cache Gradle dependencies
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -50,7 +55,11 @@ jobs:
 
       - name: Install Android NDK and CMake
         run: |
-          sdkmanager --install "platforms;android-35" "ndk;30.0.16138531" "cmake;3.31.6" "build-tools;36.0.0"
+          set -euo pipefail
+          # Match the NDK version required by Eden's Android Gradle project.
+          sdkmanager --install "platforms;android-35" "ndk;28.2.13676358" "cmake;3.31.6" "build-tools;36.0.0"
+          test -d "$ANDROID_HOME/ndk/28.2.13676358"
+          ls -la "$ANDROID_HOME/ndk/28.2.13676358" | head
 
       - name: Clone Eden upstream with recursive submodules
         run: |
@@ -94,7 +103,7 @@ jobs:
         working-directory: eden
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/30.0.16138531
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
           CCACHE: "true"
         run: |
           set -euo pipefail

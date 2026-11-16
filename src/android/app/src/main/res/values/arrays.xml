@@ -145,6 +145,18 @@
         <item>2</item>
     </integer-array>
 
+    <string-array name="hardwareProfileNames">
+        <item>@string/hardware_profile_performance</item>
+        <item>@string/hardware_profile_balanced</item>
+        <item>@string/hardware_profile_hardcore</item>
+    </string-array>
+
+    <integer-array name="hardwareProfileValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </integer-array>
+
     <string-array name="rendererResolutionNames">
         <item>@string/resolution_quarter</item>
         <item>@string/resolution_half</item>

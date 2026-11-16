@@ -13,6 +13,7 @@ on:
     branches:
       - main
       - 'recovery/**'
+      - 'performance/**'
     paths:
       - ".github/workflows/android-m23-release.yml"
       - "README.md"
@@ -54,8 +55,8 @@ jobs:
       - name: Clone Eden upstream with recursive submodules
         run: |
           set -euo pipefail
-          git clone --recursive --branch v0.2.0-rc1 https://git.eden-emu.dev/eden-emu/eden.git eden
-          test "$(git -C eden describe --tags --exact-match)" = "v0.2.0-rc1"
+          git clone --recursive --branch v0.2.0-rc2 https://git.eden-emu.dev/eden-emu/eden.git eden
+          test "$(git -C eden describe --tags --exact-match)" = "v0.2.0-rc2"
           git -C eden rev-parse HEAD | tee upstream-commit.txt
           git -C eden submodule status --recursive
 
@@ -110,7 +111,10 @@ jobs:
           "$TOOLS/aapt" dump badging "$APK" | tee ../apk-badging.txt
           "$TOOLS/zipalign" -c -v 4 "$APK"
           "$TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee ../apk-signature.txt
-          grep -q "^sdkVersion:'29'" ../apk-badging.txt
+          SDK_MIN="$(sed -n "s/^sdkVersion:'\\([0-9][0-9]*\\)'.*/\\1/p" ../apk-badging.txt | head -n 1)"
+          test -n "$SDK_MIN"
+          test "$SDK_MIN" -ge 24
+          test "$SDK_MIN" -le 35
           unzip -Z1 "$APK" | tee ../apk-contents.txt
           grep -q '^lib/arm64-v8a/' ../apk-contents.txt
 

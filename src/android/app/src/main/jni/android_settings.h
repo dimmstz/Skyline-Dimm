@@ -147,7 +147,11 @@ namespace AndroidSettings {
                                                       &show_performance_overlay};
 
 
-        Settings::SwitchableSetting<s32> pipeline_worker_count{linkage, 2, "pipeline_worker_count",
+        Settings::SwitchableSetting<s32> hardware_profile{linkage, 0, "hardware_profile",
+                                 Settings::Category::Android,
+                                 Settings::Specialization::Default, true, true};
+
+        Settings::SwitchableSetting<s32> pipeline_worker_count{linkage, 4, "pipeline_worker_count",
                                  Settings::Category::Android,
                                  Settings::Specialization::Default,
                                  true,

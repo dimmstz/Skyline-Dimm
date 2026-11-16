@@ -409,6 +409,15 @@ abstract class SettingsItem(
 
             put(
                 SingleChoiceSetting(
+                    IntSetting.HARDWARE_PROFILE,
+                    titleId = R.string.hardware_profile,
+                    descriptionId = R.string.hardware_profile_description,
+                    choicesId = R.array.hardwareProfileNames,
+                    valuesId = R.array.hardwareProfileValues
+                )
+            )
+            put(
+                SingleChoiceSetting(
                     IntSetting.RENDERER_RESOLUTION,
                     titleId = R.string.renderer_resolution,
                     choicesId = R.array.rendererResolutionNames,

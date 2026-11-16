@@ -1891,6 +1891,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <string name="external_content">External Content</string>
     <string name="add_folders">Add Folder</string>
+    <string name="hardware_profile">Hardware profile</string>
+    <string name="hardware_profile_description">Choose according to device capability: Performance for entry-level phones, Balanced for stronger mid-range devices, and Hardcore for flagships.</string>
+    <string name="hardware_profile_performance">Performance</string>
+    <string name="hardware_profile_balanced">Balanced</string>
+    <string name="hardware_profile_hardcore">Hardcore</string>
+    <string name="hardware_profile_performance_description">For entry-level phones such as the Galaxy M23. Reduces graphics load and prioritizes FPS and stability.</string>
+    <string name="hardware_profile_balanced_description">For stronger mid-range phones. Balances graphics quality, FPS and stability.</string>
+    <string name="hardware_profile_hardcore_description">For flagship phones. Prioritizes graphics quality and accuracy with higher GPU load and asynchronous shader compilation.</string>
+
     <string name="percent">%1$d%%</string>
 
 </resources>

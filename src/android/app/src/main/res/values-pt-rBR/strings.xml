@@ -931,6 +931,15 @@
     <string name="enable_overlay">Ativar Applet de Sobreposição</string>
     <string name="enable_overlay_description">Ativa o applet de sobreposição integrado do Horizon. Pressione e segure o botão home por 1 segundo para exibi-lo.</string>
 
+    <string name="hardware_profile">Perfil de hardware</string>
+    <string name="hardware_profile_description">Escolha conforme a capacidade do celular: Desempenho para aparelhos de entrada, Balanceado para intermediários potentes e Hardcore para modelos topo de linha.</string>
+    <string name="hardware_profile_performance">Desempenho</string>
+    <string name="hardware_profile_balanced">Balanceado</string>
+    <string name="hardware_profile_hardcore">Hardcore</string>
+    <string name="hardware_profile_performance_description">Para celulares de entrada, como o Galaxy M23. Reduz a carga gráfica e prioriza FPS e estabilidade.</string>
+    <string name="hardware_profile_balanced_description">Para celulares intermediários mais potentes. Equilibra qualidade gráfica, FPS e estabilidade.</string>
+    <string name="hardware_profile_hardcore_description">Para celulares topo de linha. Prioriza qualidade gráfica e precisão, com maior carga de GPU e compilação assíncrona de shaders.</string>
+
     <!-- Licenses screen strings -->
     <string name="licenses">Licenças</string>
     <string name="license_fidelityfx_fsr_description">Upscaling de alta qualidade da AMD</string>

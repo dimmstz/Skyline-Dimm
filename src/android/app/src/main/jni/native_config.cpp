@@ -41,26 +41,30 @@ static void ApplyHardwareProfile(s32 profile) {
 
     AndroidSettings::values.hardware_profile.SetValue(profile);
 
-    // Keep the safe baseline common to all M23 profiles.
+    // Hardware-tier presets: Performance targets entry-level phones such as
+    // the Galaxy M23; Balanced targets stronger mid/high-end phones; Hardcore
+    // targets flagship SoCs and prioritizes visual quality.
     Settings::values.use_asynchronous_gpu_emulation.SetValue(true);
     Settings::values.use_disk_shader_cache.SetValue(true);
     Settings::values.use_vulkan_driver_pipeline_cache.SetValue(true);
-    Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::Low);
     Settings::values.max_anisotropy.SetValue(Settings::AnisotropyMode::Default);
 
     switch (profile) {
-    case 0: // Performance: lower pixel cost, avoid shader pop-in.
+    case 0: // Performance: reduce GPU load for entry-level devices (Galaxy M23).
         Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res1_2X);
+        Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::Low);
         Settings::values.use_asynchronous_shaders.SetValue(false);
         AndroidSettings::values.pipeline_worker_count.SetValue(4);
         break;
-    case 1: // Balanced: moderate resolution and moderate background compilation.
-        Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res3_4X);
+    case 1: // Balanced: native resolution and conservative shader scheduling.
+        Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res1X);
+        Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::Normal);
         Settings::values.use_asynchronous_shaders.SetValue(false);
-        AndroidSettings::values.pipeline_worker_count.SetValue(3);
+        AndroidSettings::values.pipeline_worker_count.SetValue(4);
         break;
-    case 2: // Hardcore: lowest resolution and more aggressive shader throughput.
-        Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res1_4X);
+    case 2: // Hardcore: flagship devices, higher accuracy and background shader work.
+        Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res1X);
+        Settings::values.gpu_accuracy.SetValue(Settings::GpuAccuracy::High);
         Settings::values.use_asynchronous_shaders.SetValue(true);
         AndroidSettings::values.pipeline_worker_count.SetValue(6);
         break;

@@ -1891,6 +1891,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <string name="external_content">External Content</string>
     <string name="add_folders">Add Folder</string>
+    <string name="hardware_profile">Hardware profile</string>
+    <string name="hardware_profile_description">Choose a performance preset for your device. The preset changes rendering resolution and selected GPU/shader options.</string>
+    <string name="hardware_profile_performance">Performance</string>
+    <string name="hardware_profile_balanced">Balanced</string>
+    <string name="hardware_profile_hardcore">Hardcore</string>
+    <string name="hardware_profile_performance_description">Prioritizes frame rate with reduced internal resolution and conservative shader compilation.</string>
+    <string name="hardware_profile_balanced_description">Balances internal resolution, frame pacing and background pipeline compilation.</string>
+    <string name="hardware_profile_hardcore_description">Experimental maximum-performance mode: lowest internal resolution, more pipeline workers and asynchronous shader compilation. May cause visual pop-in.</string>
+
     <string name="percent">%1$d%%</string>
 
 </resources>

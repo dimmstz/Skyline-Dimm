@@ -76,6 +76,20 @@ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_initializePerGameConfig(JNIEnv* 
     const auto config_file_name = program_id == 0 ? file_name : std::format("{:016X}", program_id);
     per_game_config =
         std::make_unique<AndroidConfig>(config_file_name, Config::ConfigType::PerGameConfig);
+
+    // Emit the effective per-game values so device logs can confirm that the
+    // Android switches actually reach the native renderer configuration.
+    LOG_INFO(Frontend,
+             "[Skyline-Dimm] Active game config: mode={}, async_shaders={}, async_gpu={}, "
+             "disk_shader_cache={}, vulkan_pipeline_cache={}, pipeline_workers={}",
+             Settings::values.use_docked_mode.GetValue() == Settings::ConsoleMode::Docked
+                 ? "TV/Docked"
+                 : "Handheld",
+             Settings::values.use_asynchronous_shaders.GetValue(),
+             Settings::values.use_asynchronous_gpu_emulation.GetValue(),
+             Settings::values.use_disk_shader_cache.GetValue(),
+             Settings::values.use_vulkan_driver_pipeline_cache.GetValue(),
+             AndroidSettings::values.pipeline_worker_count.GetValue());
 }
 
 jboolean Java_org_yuzu_yuzu_1emu_utils_NativeConfig_isPerGameConfigLoaded(JNIEnv* env,

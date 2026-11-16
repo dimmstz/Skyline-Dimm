@@ -9,6 +9,7 @@ on:
       - ".github/workflows/android-m23-release.yml"
       - "README.md"
       - "patches/android/**"
+      - "src/android/**"
 
 permissions:
   contents: write
@@ -60,10 +61,10 @@ jobs:
           git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
           git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
           git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
-          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml
+          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml
           cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
           cp README.md eden/M23-PERFORMANCE-PROFILE.md
-          git -C eden add .github/workflows/android-m23-release.yml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
+          git -C eden add .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
           if ! git -C eden diff --cached --quiet; then
             git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
           fi

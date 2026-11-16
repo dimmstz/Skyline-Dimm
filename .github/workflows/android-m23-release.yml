@@ -18,8 +18,9 @@ on:
       - "README.md"
       - "patches/android/**"
 
+# Release creation is limited to successful pushes on recovery branches.
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: android-m23-release-${{ github.ref }}
@@ -133,3 +134,19 @@ jobs:
             apk-contents.txt
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publish APK and AAB to GitHub Releases
+        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/recovery/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: m23-build-${{ github.run_number }}
+          name: Skyline-Dimm M23 build #${{ github.run_number }}
+          prerelease: true
+          draft: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            eden/artifacts/app-legacy-release.apk
+            eden/artifacts/app-legacy-release.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

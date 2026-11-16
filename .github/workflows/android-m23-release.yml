@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   build-release:
-    name: Import Eden source and build Android Legacy Release (ARM64)
+    name: Import Eden source and build Android Standard Release (ARM64)
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:
@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x .ci/android/build.sh
-          .ci/android/build.sh --release --target legacy --build-type Release
+          .ci/android/build.sh --release --target standard --build-type Release
 
       - name: Validate APK manifest, alignment and signatures
         working-directory: eden
@@ -122,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: skyline-dimm-m23-release-${{ github.run_number }}
+          name: skyline-dimm-m23-standard-release-${{ github.run_number }}
           path: |
             eden/artifacts/**
             upstream-commit.txt

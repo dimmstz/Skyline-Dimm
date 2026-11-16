@@ -406,8 +406,11 @@ class SettingsFragmentPresenter(
 
     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
-            val selectedProfile = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
-                .getString("profile", "performance") ?: "performance"
+            val profilePreferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
+            if (!profilePreferences.contains("profile")) {
+                applyHardwareProfile(0, showToast = false)
+            }
+            val selectedProfile = profilePreferences.getString("profile", "performance") ?: "performance"
             val profileLabel = when (selectedProfile) {
                 "balanced" -> context.getString(R.string.hardware_profile_balanced)
                 "hardcore" -> context.getString(R.string.hardware_profile_hardcore)
@@ -533,7 +536,7 @@ class SettingsFragmentPresenter(
             .show()
     }
 
-    private fun applyHardwareProfile(profile: Int) {
+    private fun applyHardwareProfile(profile: Int, showToast: Boolean = true) {
         // Apply only known Eden config keys. Per-game configuration is never modified.
         val values = when (profile) {
             1 -> Triple(3, 0, 3)
@@ -567,11 +570,13 @@ class SettingsFragmentPresenter(
             .edit()
             .putString("profile", key)
             .apply()
-        Toast.makeText(
-            context,
-            context.getString(R.string.hardware_profile_applied, profilesLabel(profile)),
-            Toast.LENGTH_LONG
-        ).show()
+        if (showToast) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.hardware_profile_applied, profilesLabel(profile)),
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     private fun profilesLabel(profile: Int): String = when (profile) {

@@ -4,6 +4,7 @@
 package org.yuzu.yuzu_emu.features.settings.ui
 
 import android.annotation.SuppressLint
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.os.Build
 import android.widget.Toast
 import org.yuzu.yuzu_emu.NativeLibrary
@@ -405,6 +406,20 @@ class SettingsFragmentPresenter(
 
     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
+            val selectedProfile = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
+                .getString("profile", "performance") ?: "performance"
+            val profileLabel = when (selectedProfile) {
+                "balanced" -> context.getString(R.string.hardware_profile_balanced)
+                "hardcore" -> context.getString(R.string.hardware_profile_hardcore)
+                else -> context.getString(R.string.hardware_profile_performance)
+            }
+            add(
+                RunnableSetting(
+                    titleId = R.string.hardware_profile_title,
+                    descriptionString = context.getString(R.string.hardware_profile_current, profileLabel),
+                    isRunnable = !NativeLibrary.isRunning() && !NativeConfig.isPerGameConfigLoaded()
+                ) { showHardwareProfileDialog() }
+            )
             add(
                 SubmenuSetting(
                     titleId = R.string.preferences_system,
@@ -491,6 +506,78 @@ class SettingsFragmentPresenter(
                 ) { settingsViewModel.setShouldShowResetSettingsDialog(true) }
             )
         }
+    }
+
+
+    private fun showHardwareProfileDialog() {
+        val profiles = arrayOf(
+            context.getString(R.string.hardware_profile_performance),
+            context.getString(R.string.hardware_profile_balanced),
+            context.getString(R.string.hardware_profile_hardcore)
+        )
+        val preferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
+        val current = when (preferences.getString("profile", "performance")) {
+            "balanced" -> 1
+            "hardcore" -> 2
+            else -> 0
+        }
+
+        MaterialAlertDialogBuilder(activity ?: context)
+            .setTitle(R.string.hardware_profile_title)
+            .setSingleChoiceItems(profiles, current) { dialog, selected ->
+                applyHardwareProfile(selected)
+                dialog.dismiss()
+                loadSettingsList(true)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun applyHardwareProfile(profile: Int) {
+        // Apply only known Eden config keys. Per-game configuration is never modified.
+        val values = when (profile) {
+            1 -> Triple(3, 0, 3)
+            2 -> Triple(4, 1, 4)
+            else -> Triple(1, 0, 2)
+        }
+
+        NativeConfig.setInt("resolution_setup", values.first)
+        NativeConfig.setInt("gpu_accuracy", values.second)
+        NativeConfig.setInt("max_anisotropy", if (profile == 0) 0 else if (profile == 1) 2 else 4)
+        NativeConfig.setInt("pipeline_worker_count", values.third)
+        NativeConfig.setInt("accelerate_astc", 2)
+        NativeConfig.setInt("vram_usage_mode", if (profile == 2) 1 else 0)
+
+        NativeConfig.setBoolean("use_disk_shader_cache", true)
+        NativeConfig.setBoolean("use_asynchronous_shaders", true)
+        NativeConfig.setBoolean("use_asynchronous_gpu_emulation", true)
+        NativeConfig.setBoolean("use_optimized_vertex_buffers", true)
+        NativeConfig.setBoolean("use_reactive_flushing", true)
+        NativeConfig.setBoolean("sync_memory_operations", false)
+        NativeConfig.setBoolean("enable_buffer_history", profile == 2)
+        NativeConfig.setBoolean("force_max_clock", false)
+
+        NativeConfig.saveGlobalConfig()
+        val key = when (profile) {
+            1 -> "balanced"
+            2 -> "hardcore"
+            else -> "performance"
+        }
+        context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
+            .edit()
+            .putString("profile", key)
+            .apply()
+        Toast.makeText(
+            context,
+            context.getString(R.string.hardware_profile_applied, profilesLabel(profile)),
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    private fun profilesLabel(profile: Int): String = when (profile) {
+        1 -> context.getString(R.string.hardware_profile_balanced)
+        2 -> context.getString(R.string.hardware_profile_hardcore)
+        else -> context.getString(R.string.hardware_profile_performance)
     }
 
     private fun addSystemSettings(sl: ArrayList<SettingsItem>) {

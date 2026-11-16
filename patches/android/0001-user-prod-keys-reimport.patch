@@ -5,7 +5,7 @@ diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/u
  import org.yuzu.yuzu_emu.features.settings.model.Settings
  import org.yuzu.yuzu_emu.features.settings.model.view.PathSetting
  import org.yuzu.yuzu_emu.fragments.MessageDialogFragment
-+import org.yuzu.yuzu_emu.model.GamesViewModel
++import org.yuzu.yuzu_emu.ui.main.MainActivity
  import org.yuzu.yuzu_emu.utils.PathUtil
  import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
  import org.yuzu.yuzu_emu.utils.*
@@ -13,19 +13,6 @@ diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/u
      private val args by navArgs<SettingsFragmentArgs>()
  
      private val settingsViewModel: SettingsViewModel by activityViewModels()
-+    private val gamesViewModel: GamesViewModel by activityViewModels()
-+
-+    private val prodKeysPickerLauncher =
-+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-+            if (uri != null) {
-+                InstallableActions.processKey(
-+                    activity = requireActivity(),
-+                    fragmentManager = parentFragmentManager,
-+                    gamesViewModel = gamesViewModel,
-+                    result = uri
-+                )
-+            }
-+        }
  
      private val requestAllFilesPermissionLauncher = registerForActivityResult(
          ActivityResultContracts.StartActivityForResult()
@@ -35,7 +22,7 @@ diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/u
                          true
                      }
 +                    R.id.action_replace_prod_keys -> {
-+                        prodKeysPickerLauncher.launch(arrayOf("*/*"))
++                        (requireActivity() as MainActivity).getProdKey.launch(arrayOf("*/*"))
 +                        true
 +                    }
  

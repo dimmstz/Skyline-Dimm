@@ -413,6 +413,9 @@ class SettingsFragmentPresenter(
                     menuKey = MenuTag.SECTION_SYSTEM
                 )
             )
+            if (!NativeConfig.isPerGameConfigLoaded()) {
+                add(IntSetting.HARDWARE_PROFILE.key)
+            }
             add(
                 SubmenuSetting(
                     titleId = R.string.preferences_graphics,

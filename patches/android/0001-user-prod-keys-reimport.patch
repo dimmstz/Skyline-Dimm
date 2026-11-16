@@ -9,7 +9,7 @@ diff --git a/src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/u
  import org.yuzu.yuzu_emu.utils.PathUtil
  import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
  import org.yuzu.yuzu_emu.utils.*
-@@ -164,7 +178,11 @@
+@@ -164,7 +165,11 @@
                          view.findNavController()
                              .navigate(R.id.action_settingsFragment_to_settingsSearchFragment)
                          true

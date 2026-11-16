@@ -931,6 +931,15 @@
     <string name="enable_overlay">Ativar Applet de Sobreposição</string>
     <string name="enable_overlay_description">Ativa o applet de sobreposição integrado do Horizon. Pressione e segure o botão home por 1 segundo para exibi-lo.</string>
 
+    <string name="hardware_profile">Perfil de hardware</string>
+    <string name="hardware_profile_description">Escolha um perfil de desempenho para o aparelho. O perfil ajusta a resolução interna e opções selecionadas de GPU e shaders.</string>
+    <string name="hardware_profile_performance">Desempenho</string>
+    <string name="hardware_profile_balanced">Balanceado</string>
+    <string name="hardware_profile_hardcore">Hardcore</string>
+    <string name="hardware_profile_performance_description">Prioriza a taxa de quadros com resolução interna reduzida e compilação conservadora de shaders.</string>
+    <string name="hardware_profile_balanced_description">Equilibra resolução interna, estabilidade dos quadros e compilação de pipelines em segundo plano.</string>
+    <string name="hardware_profile_hardcore_description">Modo experimental de desempenho máximo: resolução interna mínima, mais trabalhadores de pipeline e compilação assíncrona de shaders. Pode causar objetos aparecendo com atraso.</string>
+
     <!-- Licenses screen strings -->
     <string name="licenses">Licenças</string>
     <string name="license_fidelityfx_fsr_description">Upscaling de alta qualidade da AMD</string>

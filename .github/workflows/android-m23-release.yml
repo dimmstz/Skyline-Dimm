@@ -6,7 +6,6 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/android-m23-release.yml"
       - "README.md"
       - "patches/android/**"
       - "src/android/**"
@@ -14,7 +13,6 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/android-m23-release.yml"
       - "README.md"
       - "patches/android/**"
       - "src/android/**"
@@ -77,7 +75,7 @@ jobs:
             git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
           fi
           AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          # PR builds must never write generated upstream commits back to main.
+          # Pull-request builds validate the candidate without writing to main.
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
             git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
           fi
@@ -90,12 +88,10 @@ jobs:
           # Skyline-Dimm checkout. Copy the tracked patch explicitly.
           mkdir -p patches/android
           cp ../patches/android/0001-user-prod-keys-reimport.patch patches/android/
-          cp ../patches/android/0002-m23-gpu-texture-unswizzle.patch patches/android/
-          for PATCH in patches/android/0001-user-prod-keys-reimport.patch patches/android/0002-m23-gpu-texture-unswizzle.patch; do
-            test -s "$PATCH"
-            git apply --check "$PATCH"
-            git apply "$PATCH"
-          done
+          PATCH="patches/android/0001-user-prod-keys-reimport.patch"
+          test -s "$PATCH"
+          git apply --check "$PATCH"
+          git apply "$PATCH"
           grep -q 'action_replace_prod_keys' src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
           grep -q 'replace_prod_keys' src/android/app/src/main/res/values/strings.xml
 

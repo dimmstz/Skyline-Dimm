@@ -1900,6 +1900,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="hardware_profile_current">Perfil ativo: %1$s. Toque para alterar.</string>
     <string name="hardware_profile_applied">Perfil aplicado: %1$s</string>
     <string name="overlay_color">Overlay color</string>
+    <string name="overlay_preset_import_failed">Could not import overlay preset.</string>
     <string name="overlay_color_hex">Hex color</string>
     <string name="overlay_color_match_base">Match base color</string>
 </resources>

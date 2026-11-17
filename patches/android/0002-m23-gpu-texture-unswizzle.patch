@@ -1,7 +1,7 @@
 diff --git a/src/common/settings.h b/src/common/settings.h
 --- a/src/common/settings.h
 +++ b/src/common/settings.h
-@@ -735,8 +735,13 @@
+@@ -735,6 +735,12 @@
                                                    Category::RendererHacks,
                                                    Specialization::Default};
  

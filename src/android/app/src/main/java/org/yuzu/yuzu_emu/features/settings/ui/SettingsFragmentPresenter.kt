@@ -4,6 +4,7 @@
 package org.yuzu.yuzu_emu.features.settings.ui
 
 import android.annotation.SuppressLint
+import org.yuzu.yuzu_emu.overlay.OverlayColorActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.os.Build
 import android.widget.Toast
@@ -177,6 +178,7 @@ class SettingsFragmentPresenter(
             MenuTag.SECTION_PERFORMANCE_STATS -> addPerformanceOverlaySettings(sl)
             MenuTag.SECTION_SOC_OVERLAY -> addSocOverlaySettings(sl)
             MenuTag.SECTION_INPUT_OVERLAY -> addInputOverlaySettings(sl)
+            MenuTag.SECTION_OVERLAY_COLOR -> addOverlayColorSettings(sl)
             MenuTag.SECTION_AUDIO -> addAudioSettings(sl)
             MenuTag.SECTION_INPUT -> addInputSettings(sl)
             MenuTag.SECTION_INPUT_PLAYER_ONE -> addInputPlayer(sl, 0)
@@ -459,6 +461,14 @@ class SettingsFragmentPresenter(
                 )
                 add(
                     SubmenuSetting(
+                        titleId = R.string.overlay_color_customize,
+                        descriptionId = R.string.overlay_color_customize_summary,
+                        iconId = R.drawable.ic_palette,
+                        menuKey = MenuTag.SECTION_OVERLAY_COLOR
+                    )
+                )
+                add(
+                    SubmenuSetting(
                         titleId = R.string.input_overlay_options,
                         iconId = R.drawable.ic_controller,
                         descriptionId = R.string.input_overlay_options_description,
@@ -622,11 +632,6 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.USE_CUSTOM_CPU_TICKS.key)
             add(IntSetting.CPU_TICKS.key)
 
-            if (!NativeConfig.isPerGameConfigLoaded()) {
-                add(HeaderSetting(R.string.network))
-                add(StringSetting.WEB_TOKEN.key)
-                add(StringSetting.WEB_USERNAME.key)
-            }
         }
     }
 
@@ -700,6 +705,20 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.SHOW_POWER_INFO.key)
             add(BooleanSetting.SHOW_SHADERS_BUILDING.key)
         }
+    }
+
+    private fun addOverlayColorSettings(sl: ArrayList<SettingsItem>) {
+        sl.add(
+            RunnableSetting(
+                titleId = R.string.overlay_color_customize,
+                descriptionId = R.string.overlay_color_customize_summary,
+                isRunnable = true
+            ) {
+                activity?.let { currentActivity ->
+                    currentActivity.startActivity(OverlayColorActivity.createIntent(currentActivity))
+                }
+            }
+        )
     }
 
     private fun addInputOverlaySettings(sl: ArrayList<SettingsItem>) {

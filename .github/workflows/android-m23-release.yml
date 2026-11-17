@@ -2,11 +2,17 @@ name: Android M23 Release
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "README.md"
+      - "patches/android/**"
+      - "src/android/**"
   push:
     branches:
       - main
     paths:
-      - ".github/workflows/android-m23-release.yml"
       - "README.md"
       - "patches/android/**"
       - "src/android/**"
@@ -69,7 +75,10 @@ jobs:
             git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
           fi
           AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+          # Pull-request builds validate the candidate without writing to main.
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+          fi
 
       - name: Apply Skyline-Dimm Android patches
         working-directory: eden
@@ -141,7 +150,7 @@ jobs:
           retention-days: 14
 
       - name: Publish APK GitHub Release
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: m23-build-${{ github.run_number }}

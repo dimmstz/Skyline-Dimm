@@ -537,28 +537,37 @@ class SettingsFragmentPresenter(
     }
 
     private fun applyHardwareProfile(profile: Int, showToast: Boolean = true) {
-        // Apply only known Eden config keys. Per-game configuration is never modified.
-        val values = when (profile) {
-            1 -> Triple(3, 0, 3)
-            2 -> Triple(4, 1, 4)
-            else -> Triple(1, 0, 2)
+        // Use Eden's registered settings instead of invented config keys.
+        // Resolution values: 0=0.25x, 1=0.5x, 3=1.0x, 4=1.25x.
+        val resolution = when (profile) {
+            1 -> 3
+            2 -> 4
+            else -> 0
+        }
+        val workers = when (profile) {
+            1 -> 3
+            2 -> 4
+            else -> 2
         }
 
-        NativeConfig.setInt("resolution_setup", values.first)
-        NativeConfig.setInt("gpu_accuracy", values.second)
-        NativeConfig.setInt("max_anisotropy", if (profile == 0) 0 else if (profile == 1) 2 else 4)
-        NativeConfig.setInt("pipeline_worker_count", values.third)
-        NativeConfig.setInt("accelerate_astc", 2)
-        NativeConfig.setInt("vram_usage_mode", if (profile == 2) 1 else 0)
+        IntSetting.RENDERER_RESOLUTION.setInt(resolution)
+        IntSetting.RENDERER_ACCURACY.setInt(0)
+        IntSetting.MAX_ANISOTROPY.setInt(if (profile == 0) 0 else if (profile == 1) 2 else 4)
+        IntSetting.ANDROID_PIPELINE_WORKERS.setInt(workers)
+        IntSetting.RENDERER_ASTC_DECODE_METHOD.setInt(2)
+        IntSetting.RENDERER_VRAM_USAGE_MODE.setInt(0)
+        IntSetting.RENDERER_ANTI_ALIASING.setInt(0)
+        IntSetting.RENDERER_SCALING_FILTER.setInt(0)
+        IntSetting.RENDERER_SAMPLE_SHADING.setInt(0)
 
-        NativeConfig.setBoolean("use_disk_shader_cache", true)
-        NativeConfig.setBoolean("use_asynchronous_shaders", true)
-        NativeConfig.setBoolean("use_asynchronous_gpu_emulation", true)
-        NativeConfig.setBoolean("use_optimized_vertex_buffers", true)
-        NativeConfig.setBoolean("use_reactive_flushing", true)
-        NativeConfig.setBoolean("sync_memory_operations", false)
-        NativeConfig.setBoolean("enable_buffer_history", profile == 2)
-        NativeConfig.setBoolean("force_max_clock", false)
+        BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.setBoolean(true)
+        BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.setBoolean(true)
+        BooleanSetting.RENDERER_ASYNCHRONOUS_GPU_EMULATION.setBoolean(true)
+        BooleanSetting.USE_OPTIMIZED_VERTEX_BUFFERS.setBoolean(true)
+        BooleanSetting.RENDERER_REACTIVE_FLUSHING.setBoolean(profile != 0)
+        BooleanSetting.SYNC_MEMORY_OPERATIONS.setBoolean(false)
+        BooleanSetting.ENABLE_BUFFER_HISTORY.setBoolean(false)
+        BooleanSetting.RENDERER_FORCE_MAX_CLOCK.setBoolean(false)
 
         NativeConfig.saveGlobalConfig()
         val key = when (profile) {

@@ -139,3 +139,14 @@ jobs:
             apk-contents.txt
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publish APK GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: m23-build-${{ github.run_number }}
+          name: Skyline-Dimm M23 Build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          files: |
+            eden/artifacts/app-legacy-release.apk

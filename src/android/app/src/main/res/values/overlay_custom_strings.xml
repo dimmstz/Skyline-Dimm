@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="overlay_color_customize">Customize overlay colors</string>
+    <string name="overlay_color_customize_summary">Change controller button and stick colors, and manage color presets.</string>
     <string name="overlay_color_section_create_use">Create and use</string>
     <string name="overlay_color_presets">Color presets</string>
     <string name="overlay_color_presets_summary">Choose a built-in color preset or create your own.</string>

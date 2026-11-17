@@ -559,6 +559,11 @@ class SettingsFragmentPresenter(
         IntSetting.RENDERER_ANTI_ALIASING.setInt(0)
         IntSetting.RENDERER_SCALING_FILTER.setInt(0)
         IntSetting.RENDERER_SAMPLE_SHADING.setInt(0)
+        IntSetting.CPU_ACCURACY.setInt(if (profile == 0) 2 else 0)
+
+        // Favor low-overhead CPU execution on the M23 profile.
+        BooleanSetting.FASTMEM.setBoolean(true)
+        BooleanSetting.SKIP_CPU_INNER_INVALIDATION.setBoolean(profile == 0)
 
         BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.setBoolean(true)
         BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.setBoolean(true)

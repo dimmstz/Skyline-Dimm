@@ -463,7 +463,7 @@ class SettingsFragmentPresenter(
                     SubmenuSetting(
                         titleId = R.string.overlay_color_customize,
                         descriptionId = R.string.overlay_color_customize_summary,
-                        iconId = R.drawable.ic_palette,
+                        iconId = R.drawable.ic_controller,
                         menuKey = MenuTag.SECTION_OVERLAY_COLOR
                     )
                 )

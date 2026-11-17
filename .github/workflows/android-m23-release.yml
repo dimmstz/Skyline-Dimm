@@ -2,6 +2,14 @@ name: Android M23 Release
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/android-m23-release.yml"
+      - "README.md"
+      - "patches/android/**"
+      - "src/android/**"
   push:
     branches:
       - main
@@ -69,7 +77,10 @@ jobs:
             git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
           fi
           AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-          git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+          # PR builds must never write generated upstream commits back to main.
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
+          fi
 
       - name: Apply Skyline-Dimm Android patches
         working-directory: eden
@@ -79,10 +90,12 @@ jobs:
           # Skyline-Dimm checkout. Copy the tracked patch explicitly.
           mkdir -p patches/android
           cp ../patches/android/0001-user-prod-keys-reimport.patch patches/android/
-          PATCH="patches/android/0001-user-prod-keys-reimport.patch"
-          test -s "$PATCH"
-          git apply --check "$PATCH"
-          git apply "$PATCH"
+          cp ../patches/android/0002-m23-gpu-texture-unswizzle.patch patches/android/
+          for PATCH in patches/android/0001-user-prod-keys-reimport.patch patches/android/0002-m23-gpu-texture-unswizzle.patch; do
+            test -s "$PATCH"
+            git apply --check "$PATCH"
+            git apply "$PATCH"
+          done
           grep -q 'action_replace_prod_keys' src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
           grep -q 'replace_prod_keys' src/android/app/src/main/res/values/strings.xml
 
@@ -141,7 +154,7 @@ jobs:
           retention-days: 14
 
       - name: Publish APK GitHub Release
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: m23-build-${{ github.run_number }}

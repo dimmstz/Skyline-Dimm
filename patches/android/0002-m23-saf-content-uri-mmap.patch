@@ -2,7 +2,7 @@ diff --git a/src/common/fs/file.cpp b/src/common/fs/file.cpp
 index 000000000..000000000 100644
 --- a/src/common/fs/file.cpp
 +++ b/src/common/fs/file.cpp
-@@ -420,16 +420,22 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
+@@ -420,16 +420,20 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
  #elif __ANDROID__
      if (Android::IsContentUri(path)) {
          ASSERT_MSG(mode == FileAccessMode::Read, "Content URI file access is for read-only!");

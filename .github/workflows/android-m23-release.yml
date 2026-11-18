@@ -6,6 +6,7 @@ on:
     branches:
       - main
     paths:
+      - ".github/workflows/android-m23-release.yml"
       - "README.md"
       - "patches/android/**"
       - "src/android/**"
@@ -88,12 +89,18 @@ jobs:
           # Skyline-Dimm checkout. Copy the tracked patch explicitly.
           mkdir -p patches/android
           cp ../patches/android/0001-user-prod-keys-reimport.patch patches/android/
+          cp ../patches/android/0002-m23-saf-content-uri-mmap.patch patches/android/
           PATCH="patches/android/0001-user-prod-keys-reimport.patch"
+          test -s "$PATCH"
+          git apply --check "$PATCH"
+          git apply "$PATCH"
+          PATCH="patches/android/0002-m23-saf-content-uri-mmap.patch"
           test -s "$PATCH"
           git apply --check "$PATCH"
           git apply "$PATCH"
           grep -q 'action_replace_prod_keys' src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
           grep -q 'replace_prod_keys' src/android/app/src/main/res/values/strings.xml
+          grep -q 'Android::OpenContentUri(path, Android::OpenMode::Read)' src/common/fs/file.cpp
 
       - name: Install shader compiler tools
         run: |
@@ -110,6 +117,16 @@ jobs:
           sudo apt-get install --yes ccache
           ccache --version
 
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Build Android Legacy Release
         working-directory: eden
         env:
@@ -119,7 +136,30 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x .ci/android/build.sh
-          .ci/android/build.sh --release --target legacy --build-type Release
+
+          # Maven Central can temporarily rate-limit GitHub-hosted runners.
+          # Retry only transient HTTP 429 dependency-resolution failures.
+          for attempt in 1 2 3; do
+            LOG_FILE="../gradle-build-attempt-${attempt}.log"
+            if .ci/android/build.sh --release --target legacy --build-type Release > "$LOG_FILE" 2>&1; then
+              cat "$LOG_FILE"
+              exit 0
+            else
+              BUILD_STATUS=$?
+              cat "$LOG_FILE"
+            fi
+
+            if grep -Eqi 'HTTP 429|status code 429|Too Many Requests' "$LOG_FILE"; then
+              if [ "$attempt" -lt 3 ]; then
+                WAIT_SECONDS=$((attempt * 45))
+                echo "Maven Central rate limit detected (HTTP 429). Retrying in ${WAIT_SECONDS}s (attempt $((attempt + 1))/3)."
+                sleep "$WAIT_SECONDS"
+                continue
+              fi
+              echo "Maven Central remained rate-limited after 3 attempts."
+            fi
+            exit "$BUILD_STATUS"
+          done
 
       - name: Validate APK manifest, alignment and signatures
         working-directory: eden

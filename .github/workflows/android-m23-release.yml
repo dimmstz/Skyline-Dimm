@@ -88,12 +88,18 @@ jobs:
           # Skyline-Dimm checkout. Copy the tracked patch explicitly.
           mkdir -p patches/android
           cp ../patches/android/0001-user-prod-keys-reimport.patch patches/android/
+          cp ../patches/android/0002-m23-saf-content-uri-mmap.patch patches/android/
           PATCH="patches/android/0001-user-prod-keys-reimport.patch"
+          test -s "$PATCH"
+          git apply --check "$PATCH"
+          git apply "$PATCH"
+          PATCH="patches/android/0002-m23-saf-content-uri-mmap.patch"
           test -s "$PATCH"
           git apply --check "$PATCH"
           git apply "$PATCH"
           grep -q 'action_replace_prod_keys' src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
           grep -q 'replace_prod_keys' src/android/app/src/main/res/values/strings.xml
+          grep -q 'Android::OpenContentUri(path, Android::OpenMode::Read)' src/common/fs/file.cpp
 
       - name: Install shader compiler tools
         run: |

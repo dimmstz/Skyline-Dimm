@@ -7,8 +7,10 @@ on:
       - main
     paths:
       - "README.md"
+      - "ANDROID-HARDWARE-PERFORMANCE-PROFILES.md"
       - "patches/android/**"
       - "src/android/**"
+      - ".github/workflows/android-m23-release.yml"
   push:
     branches:
       - main
@@ -60,17 +62,25 @@ jobs:
       - name: Merge complete Eden source into Skyline-Dimm main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           git -C eden config user.name "github-actions[bot]"
           git -C eden config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
-          git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
-          git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
-          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            test -n "${PR_HEAD_SHA}"
+            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${PR_HEAD_SHA}"
+          else
+            git -C eden fetch "https://github.com/${GITHUB_REPOSITORY}.git" "${GITHUB_REF_NAME}"
+          fi
+          SOURCE_SHA="$(git -C eden rev-parse FETCH_HEAD)"
+          git -C eden show "${SOURCE_SHA}:README.md" > /tmp/eden-upstream-readme.md
+          git -C eden merge --allow-unrelated-histories --no-edit -X ours "${SOURCE_SHA}"
+          git -C eden checkout "${SOURCE_SHA}" -- .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml
           cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
           cp README.md eden/M23-PERFORMANCE-PROFILE.md
-          git -C eden add .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
+          cp ANDROID-HARDWARE-PERFORMANCE-PROFILES.md eden/ANDROID-HARDWARE-PERFORMANCE-PROFILES.md
+          git -C eden add .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md ANDROID-HARDWARE-PERFORMANCE-PROFILES.md
           if ! git -C eden diff --cached --quiet; then
             git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
           fi
@@ -88,12 +98,20 @@ jobs:
           # Skyline-Dimm checkout. Copy the tracked patch explicitly.
           mkdir -p patches/android
           cp ../patches/android/0001-user-prod-keys-reimport.patch patches/android/
+          cp ../patches/android/0003-android-gpu-texture-unswizzle-default.patch patches/android/
           PATCH="patches/android/0001-user-prod-keys-reimport.patch"
           test -s "$PATCH"
           git apply --check "$PATCH"
           git apply "$PATCH"
           grep -q 'action_replace_prod_keys' src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
           grep -q 'replace_prod_keys' src/android/app/src/main/res/values/strings.xml
+
+          PATCH="patches/android/0003-android-gpu-texture-unswizzle-default.patch"
+          test -s "$PATCH"
+          git apply --check "$PATCH"
+          git apply "$PATCH"
+          grep -Fq '#ifdef __ANDROID__' src/common/settings.h
+          grep -Fq '"gpu_unswizzle_enabled"' src/common/settings.h
 
       - name: Install shader compiler tools
         run: |

@@ -16,8 +16,10 @@ on:
       - main
     paths:
       - "README.md"
+      - "ANDROID-HARDWARE-PERFORMANCE-PROFILES.md"
       - "patches/android/**"
       - "src/android/**"
+      - ".github/workflows/android-m23-release.yml"
 
 permissions:
   contents: write

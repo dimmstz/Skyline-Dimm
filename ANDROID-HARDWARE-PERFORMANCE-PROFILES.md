@@ -97,3 +97,8 @@ Referências de frametime: 16,7 ms = 60 FPS; 33,3 ms = 30 FPS; 50 ms = 20 FPS.
 - O ganho de FPS do unswizzle não está medido no M23 nem em uma matriz ampla de aparelhos.
 - O build CI confirma compilação e validação do APK, não desempenho real. É necessário benchmark em aparelhos fracos, médios e topo de linha.
 - O desempenho sustentado depende de driver, jogo, temperatura, resolução, shaders e estado do sistema.
+
+
+## GitHub Actions retention
+
+The maintenance workflow runs weekly or by manual dispatch. It only removes completed runs older than 90 days after preserving at least the 20 newest runs for each workflow; it does not run on every push or pull request, so it cannot erase recent build logs or APK/AAB validation artifacts during development.

@@ -1897,7 +1897,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <string name="hardware_profile_performance">Entrada / economia — 0,5×, 2 threads</string>
     <string name="hardware_profile_balanced">Intermediário — 0,75×, 2 threads</string>
     <string name="hardware_profile_hardcore">Alto desempenho — 1×, 4 threads</string>
-    <string name="hardware_profile_current">Perfil ativo: %1$s. Toque para alterar.</string>
+    <string name="hardware_profile_current">Recomendado: %1$s. Toque para aplicar ou alterar.</string>
     <string name="hardware_profile_applied">Perfil aplicado: %1$s</string>
     <string name="overlay_color">Overlay color</string>
     <string name="overlay_preset_import_failed">Could not import overlay preset.</string>

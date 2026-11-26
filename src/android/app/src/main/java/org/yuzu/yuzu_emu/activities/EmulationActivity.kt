@@ -127,6 +127,20 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
 
         NativeConfig.reloadGlobalConfig()
 
+        // One-time compatibility migration: older Android builds enabled GPU texture
+        // unswizzling by default without validating every mobile Vulkan driver. Keep
+        // the Adreno 6xx path on the upstream-safe setting; users can re-enable it
+        // manually after testing a specific game.
+        val compatibilityPreferences =
+            getSharedPreferences("skyline_dimm_compatibility", MODE_PRIVATE)
+        if (!compatibilityPreferences.getBoolean("gpu_unswizzle_safe_default_v1", false)) {
+            BooleanSetting.GPU_UNSWIZZLE_ENABLED.setBoolean(false)
+            NativeConfig.saveGlobalConfig()
+            compatibilityPreferences.edit()
+                .putBoolean("gpu_unswizzle_safe_default_v1", true)
+                .apply()
+        }
+
         InputHandler.updateControllerData()
         val players = NativeConfig.getInputSettings(true)
         var hasConfiguredControllers = false

@@ -101,7 +101,6 @@ jobs:
           # Skyline-Dimm checkout. Copy the tracked patch explicitly.
           mkdir -p patches/android
           cp ../patches/android/0001-user-prod-keys-reimport.patch patches/android/
-          cp ../patches/android/0003-android-gpu-texture-unswizzle-default.patch patches/android/
           PATCH="patches/android/0001-user-prod-keys-reimport.patch"
           test -s "$PATCH"
           git apply --check "$PATCH"
@@ -109,12 +108,7 @@ jobs:
           grep -q 'action_replace_prod_keys' src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragment.kt
           grep -q 'replace_prod_keys' src/android/app/src/main/res/values/strings.xml
 
-          PATCH="patches/android/0003-android-gpu-texture-unswizzle-default.patch"
-          test -s "$PATCH"
-          git apply --check "$PATCH"
-          git apply "$PATCH"
-          grep -Fq '#ifdef __ANDROID__' src/common/settings.h
-          grep -Fq '"gpu_unswizzle_enabled"' src/common/settings.h
+          # Keep experimental GPU texture unswizzling opt-in; use upstream-safe default.
 
       - name: Install shader compiler tools
         run: |

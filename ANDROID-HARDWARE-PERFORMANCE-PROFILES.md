@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Manter uma base Android comum e oferecer presets para aparelhos de entrada, intermediários e topo de linha. O app apresenta os presets nas configurações globais e faz uma escolha inicial aproximada na primeira abertura dessa tela, usando RAM física total e quantidade de núcleos de CPU. Essa heurística não identifica o modelo da GPU nem substitui benchmark; o usuário pode trocar o perfil manualmente.
+Manter uma base Android comum e oferecer presets para aparelhos de entrada, intermediários e topo de linha. O app apresenta os presets nas configurações globais e sugere inicialmente um perfil aproximado usando RAM física total e quantidade de núcleos de CPU. A sugestão é apenas pré-selecionada: o app não aplica nem sobrescreve configurações existentes até o usuário escolher um perfil. A heurística não identifica o modelo da GPU nem substitui benchmark.
 
 ## Princípios globais
 
@@ -75,7 +75,7 @@ Pelo heurístico atual, o M23 (8 GB e 8 núcleos) inicia no perfil intermediári
 ## Alterações globais aplicadas
 
 1. A tela principal de configurações oferece três presets globais selecionáveis.
-2. Na primeira abertura das configurações, uma heurística simples de RAM física e núcleos escolhe um perfil inicial; a seleção fica salva e pode ser alterada manualmente.
+2. Na primeira abertura das configurações, uma heurística simples de RAM física e núcleos pré-seleciona uma recomendação; nada é aplicado automaticamente. A escolha manual é salva e pode ser alterada.
 3. Os presets alteram apenas resolução, pipeline workers, anisotropia, GPU unswizzle e opções de cache/compilação assíncrona.
 4. Não são forçados hacks de precisão, overclock, clock máximo ou alterações de sincronização de memória.
 
@@ -93,7 +93,7 @@ Referências de frametime: 16,7 ms = 60 FPS; 33,3 ms = 30 FPS; 50 ms = 20 FPS.
 
 ## Limitações conhecidas
 
-- A heurística automática considera apenas RAM física e número de núcleos; ela não detecta arquitetura, GPU, largura de banda, driver ou capacidade térmica. É um ponto de partida, não um classificador definitivo.
+- A recomendação inicial considera apenas RAM física e número de núcleos; ela não detecta arquitetura, GPU, largura de banda, driver ou capacidade térmica. É um ponto de partida, não um classificador definitivo. Os presets só alteram configurações depois da confirmação do usuário.
 - O ganho de FPS do unswizzle não está medido no M23 nem em uma matriz ampla de aparelhos.
 - O build CI confirma compilação e validação do APK, não desempenho real. É necessário benchmark em aparelhos fracos, médios e topo de linha.
 - O desempenho sustentado depende de driver, jogo, temperatura, resolução, shaders e estado do sistema.

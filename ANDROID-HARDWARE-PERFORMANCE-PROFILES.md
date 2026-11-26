@@ -16,7 +16,7 @@ Manter uma base Android comum e oferecer presets para aparelhos de entrada, inte
 
 ## Perfil 1 — entrada / economia
 
-Preset aplicado: resolução 0,5x, 2 pipeline workers, anisotropia desligada e GPU texture unswizzle desligado. Cache de shaders e compilação assíncrona permanecem habilitados. Indicado como ponto de partida para aparelhos com pouca RAM, CPU/GPU de entrada ou throttling rápido.
+Preset aplicado: resolução 0,5x, 2 pipeline workers, anisotropia padrão e GPU texture unswizzle desligado. Cache de shaders e compilação assíncrona permanecem habilitados. Indicado como ponto de partida para aparelhos com pouca RAM, CPU/GPU de entrada ou throttling rápido.
 
 | Opção | Ponto de partida |
 |---|---|

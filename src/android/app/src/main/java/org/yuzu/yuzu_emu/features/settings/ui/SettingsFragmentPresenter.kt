@@ -604,7 +604,7 @@ class SettingsFragmentPresenter(
         NativeConfig.saveGlobalConfig()
         context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
             .edit()
-            .putString("profile", key)
+            .putString("profile", profileKey(profile))
             .apply()
         if (showToast) {
             Toast.makeText(

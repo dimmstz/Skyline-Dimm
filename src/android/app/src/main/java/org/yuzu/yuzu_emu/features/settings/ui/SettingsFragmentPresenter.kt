@@ -409,10 +409,10 @@ class SettingsFragmentPresenter(
     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
             val profilePreferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
-            if (!profilePreferences.contains("profile")) {
-                applyHardwareProfile(0, showToast = false)
-            }
-            val selectedProfile = profilePreferences.getString("profile", "performance") ?: "performance"
+            val selectedProfile = profilePreferences.getString(
+                "profile",
+                profileKey(detectHardwareProfile())
+            ) ?: profileKey(detectHardwareProfile())
             val profileLabel = when (selectedProfile) {
                 "balanced" -> context.getString(R.string.hardware_profile_balanced)
                 "hardcore" -> context.getString(R.string.hardware_profile_hardcore)
@@ -529,7 +529,9 @@ class SettingsFragmentPresenter(
             context.getString(R.string.hardware_profile_hardcore)
         )
         val preferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
-        val current = when (preferences.getString("profile", "performance")) {
+        val current = when (
+            preferences.getString("profile", profileKey(detectHardwareProfile()))
+        ) {
             "balanced" -> 1
             "hardcore" -> 2
             else -> 0
@@ -546,53 +548,62 @@ class SettingsFragmentPresenter(
             .show()
     }
 
-    private fun applyHardwareProfile(profile: Int, showToast: Boolean = true) {
-        // Use Eden's registered settings instead of invented config keys.
-        // Resolution values: 0=0.25x, 1=0.5x, 3=1.0x, 4=1.25x.
-        val resolution = when (profile) {
-            1 -> 3
-            2 -> 4
+    /**
+     * Conservative first-run tier selection based on total physical RAM and CPU cores.
+     * This is only a starting point; users can always choose another profile manually.
+     */
+    private fun detectHardwareProfile(): Int {
+        val activityManager =
+            context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+        val memoryInfo = android.app.ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        val totalRamGb = memoryInfo.totalMem / (1024L * 1024L * 1024L)
+        val cpuCores = Runtime.getRuntime().availableProcessors()
+
+        return when {
+            totalRamGb >= 10L && cpuCores >= 8 -> 2
+            totalRamGb >= 6L && cpuCores >= 6 -> 1
             else -> 0
         }
+    }
+
+    private fun applyHardwareProfile(profile: Int, showToast: Boolean = true) {
+        // Resolution values from rendererResolutionNames:
+        // 0=0.25x, 1=0.5x, 2=0.75x, 3=1.0x, 4=1.25x.
+        // Keep profiles conservative and avoid unsafe CPU accuracy/memory hacks.
+        val resolution = when (profile) {
+            1 -> 2
+            2 -> 3
+            else -> 1
+        }
         val workers = when (profile) {
-            1 -> 3
             2 -> 4
             else -> 2
         }
 
         IntSetting.RENDERER_RESOLUTION.setInt(resolution)
-        IntSetting.RENDERER_ACCURACY.setInt(0)
-        IntSetting.MAX_ANISOTROPY.setInt(if (profile == 0) 0 else if (profile == 1) 2 else 4)
         IntSetting.ANDROID_PIPELINE_WORKERS.setInt(workers)
-        IntSetting.RENDERER_ASTC_DECODE_METHOD.setInt(2)
-        IntSetting.RENDERER_VRAM_USAGE_MODE.setInt(0)
-        IntSetting.RENDERER_ANTI_ALIASING.setInt(0)
-        IntSetting.RENDERER_SCALING_FILTER.setInt(0)
-        IntSetting.RENDERER_SAMPLE_SHADING.setInt(0)
-        IntSetting.CPU_ACCURACY.setInt(if (profile == 0) 2 else 0)
+        IntSetting.MAX_ANISOTROPY.setInt(
+            when (profile) {
+                2 -> 3
+                1 -> 2
+                else -> 1
+            }
+        )
 
-        // Favor low-overhead CPU execution on the M23 profile.
-        BooleanSetting.FASTMEM.setBoolean(true)
-        BooleanSetting.SKIP_CPU_INNER_INVALIDATION.setBoolean(profile == 0)
+        // Keep experimental GPU texture unswizzling user-controlled. Some mobile
+        // Vulkan drivers need it disabled for compatibility; do not force it in presets.
 
+        // Safe, broadly useful settings. Do not force accuracy, clock, or memory hacks.
         BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.setBoolean(true)
         BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.setBoolean(true)
         BooleanSetting.RENDERER_ASYNCHRONOUS_GPU_EMULATION.setBoolean(true)
         BooleanSetting.USE_OPTIMIZED_VERTEX_BUFFERS.setBoolean(true)
-        BooleanSetting.RENDERER_REACTIVE_FLUSHING.setBoolean(profile != 0)
-        BooleanSetting.SYNC_MEMORY_OPERATIONS.setBoolean(false)
-        BooleanSetting.ENABLE_BUFFER_HISTORY.setBoolean(false)
-        BooleanSetting.RENDERER_FORCE_MAX_CLOCK.setBoolean(false)
 
         NativeConfig.saveGlobalConfig()
-        val key = when (profile) {
-            1 -> "balanced"
-            2 -> "hardcore"
-            else -> "performance"
-        }
         context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
             .edit()
-            .putString("profile", key)
+            .putString("profile", profileKey(profile))
             .apply()
         if (showToast) {
             Toast.makeText(
@@ -601,6 +612,12 @@ class SettingsFragmentPresenter(
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    private fun profileKey(profile: Int): String = when (profile) {
+        1 -> "balanced"
+        2 -> "hardcore"
+        else -> "performance"
     }
 
     private fun profilesLabel(profile: Int): String = when (profile) {

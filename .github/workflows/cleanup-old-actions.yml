@@ -1,29 +1,31 @@
 name: Cleanup old GitHub Actions runs and artifacts
 
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 0"
 
 permissions:
   actions: write
   contents: read
 
 concurrency:
-  group: cleanup-actions-${{ github.event.pull_request.number || github.ref }}
+  group: cleanup-actions
   cancel-in-progress: false
 
 jobs:
   cleanup:
-    name: Keep only the 5 most recent Actions runs
+    name: Prune only very old completed Actions runs
     runs-on: ubuntu-latest
-    # Forked PRs receive a read-only GITHUB_TOKEN and must not attempt deletion.
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    timeout-minutes: 15
     steps:
-      - name: Delete runs older than the five most recent
+      - name: Delete runs older than 90 days while preserving recent history
         uses: actions/github-script@v7
         with:
           script: |
-            const keep = 5;
+            const keepPerWorkflow = 20;
+            const retentionDays = 90;
+            const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
             const runs = [];
             let page = 1;
 
@@ -39,33 +41,36 @@ jobs:
               page += 1;
             }
 
-            // GitHub returns runs newest-first. Preserve the five newest runs
-            // across all workflows and branches, regardless of their status.
-            const retained = new Set(runs.slice(0, keep).map(run => run.id));
-            const candidates = runs.slice(keep);
+            // Preserve recent history independently for each workflow.
+            const byWorkflow = new Map();
+            for (const run of runs) {
+              const key = run.workflow_id;
+              if (!byWorkflow.has(key)) byWorkflow.set(key, []);
+              byWorkflow.get(key).push(run);
+            }
+
             let deleted = 0;
             let skipped = 0;
-
-            for (const run of candidates) {
-              // Never cancel or delete an active build. It will be eligible
-              // for cleanup on the next push/PR after it reaches a terminal state.
-              if (run.status !== 'completed') {
-                skipped += 1;
-                core.warning(`Keeping active run #${run.run_number} (${run.status}) to avoid interrupting it.`);
-                continue;
-              }
-
-              try {
-                await github.rest.actions.deleteWorkflowRun({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  run_id: run.id
-                });
-                deleted += 1;
-                core.info(`Deleted run #${run.run_number}; its associated artifacts are removed with the run.`);
-              } catch (error) {
-                core.warning(`Could not delete run #${run.run_number}: ${error.message}`);
+            for (const workflowRuns of byWorkflow.values()) {
+              workflowRuns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              for (const [index, run] of workflowRuns.entries()) {
+                const isOld = new Date(run.created_at).getTime() < cutoff;
+                if (index < keepPerWorkflow || !isOld || run.status !== "completed") {
+                  skipped++;
+                  continue;
+                }
+                try {
+                  await github.rest.actions.deleteWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id
+                  });
+                  deleted++;
+                  core.info(`Deleted expired run #${run.run_number} from workflow ${run.workflow_id}.`);
+                } catch (error) {
+                  core.warning(`Could not delete run #${run.run_number}: ${error.message}`);
+                }
               }
             }
 
-            core.notice(`Cleanup finished: retained the five newest runs; deleted ${deleted} older completed runs (including their artifacts); skipped ${skipped} active runs.`);
+            core.notice(`Cleanup complete: deleted ${deleted} completed runs older than ${retentionDays} days; preserved at least ${keepPerWorkflow} runs per workflow and skipped ${skipped} others.`);

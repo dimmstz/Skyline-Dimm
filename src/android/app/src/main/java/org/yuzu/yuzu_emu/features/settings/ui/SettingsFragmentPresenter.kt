@@ -409,10 +409,10 @@ class SettingsFragmentPresenter(
     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
             val profilePreferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
-            if (!profilePreferences.contains("profile")) {
-                applyHardwareProfile(detectHardwareProfile(), showToast = false)
-            }
-            val selectedProfile = profilePreferences.getString("profile", "performance") ?: "performance"
+            val selectedProfile = profilePreferences.getString(
+                "profile",
+                profileKey(detectHardwareProfile())
+            ) ?: profileKey(detectHardwareProfile())
             val profileLabel = when (selectedProfile) {
                 "balanced" -> context.getString(R.string.hardware_profile_balanced)
                 "hardcore" -> context.getString(R.string.hardware_profile_hardcore)
@@ -529,7 +529,9 @@ class SettingsFragmentPresenter(
             context.getString(R.string.hardware_profile_hardcore)
         )
         val preferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
-        val current = when (preferences.getString("profile", "performance")) {
+        val current = when (
+            preferences.getString("profile", profileKey(detectHardwareProfile()))
+        ) {
             "balanced" -> 1
             "hardcore" -> 2
             else -> 0
@@ -600,11 +602,6 @@ class SettingsFragmentPresenter(
         BooleanSetting.USE_OPTIMIZED_VERTEX_BUFFERS.setBoolean(true)
 
         NativeConfig.saveGlobalConfig()
-        val key = when (profile) {
-            1 -> "balanced"
-            2 -> "hardcore"
-            else -> "performance"
-        }
         context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
             .edit()
             .putString("profile", key)
@@ -616,6 +613,12 @@ class SettingsFragmentPresenter(
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    private fun profileKey(profile: Int): String = when (profile) {
+        1 -> "balanced"
+        2 -> "hardcore"
+        else -> "performance"
     }
 
     private fun profilesLabel(profile: Int): String = when (profile) {

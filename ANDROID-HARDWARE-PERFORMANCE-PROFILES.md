@@ -11,7 +11,7 @@ Manter uma base Android comum e oferecer presets para aparelhos de entrada, inte
 - Preservar cache persistente de shaders/pipelines. Não limpar caches a cada inicialização.
 - Manter Async GPU e async presentation nos defaults upstream Android, evitando criar camadas extras de sincronização.
 - Não aumentar indiscriminadamente workers, draw batches, precisão relaxada, clocks ou overclock. Mais concorrência pode piorar temperatura, 1% low e estabilidade.
-- Texture unswizzling na GPU passa a ser habilitado por padrão em Android nesta proposta, mas continua configurável. Em GPU-bound devices, comparar desligado/ligado e manter desligado se o frametime piorar.
+- Texture unswizzling na GPU permanece desligado por padrão e opt-in. A compatibilidade varia por driver Vulkan; habilitar manualmente apenas após validar cada jogo e aparelho.
 - Resolução abaixo de 1x é o controle mais direto para reduzir carga de pixel na GPU, mas não corrige gargalos de CPU, NCE, driver ou compilação de shaders.
 
 ## Perfil 1 — entrada / economia
@@ -34,13 +34,13 @@ Prioridade: reduzir stutter e manter frametime estável, não maximizar FPS méd
 
 ## Perfil 2 — intermediário / balanceado
 
-Preset aplicado: resolução 0,75x, 2 pipeline workers, anisotropia 2x e GPU texture unswizzle ligado. É o perfil inicial escolhido para dispositivos com pelo menos 6 GB de RAM e 6 núcleos de CPU.
+Preset aplicado: resolução 0,75x, 2 pipeline workers e anisotropia 2x. O GPU texture unswizzle permanece sob controle manual. É o perfil inicial escolhido para dispositivos com pelo menos 6 GB de RAM e 6 núcleos de CPU.
 
 | Opção | Ponto de partida |
 |---|---|
 | Renderer | Vulkan |
 | Resolução | 0,75x |
-| GPU texture unswizzle | Ligado |
+| GPU texture unswizzle | Não alterar; controle manual |
 | Pipeline workers | 2 |
 | Anisotropia | 2x |
 | Async shaders | A/B por jogo |
@@ -50,7 +50,7 @@ Preset aplicado: resolução 0,75x, 2 pipeline workers, anisotropia 2x e GPU tex
 
 ## Perfil 3 — alto desempenho
 
-Preset aplicado: resolução 1x, 4 pipeline workers, anisotropia 4x e GPU texture unswizzle ligado. A seleção inicial usa este perfil apenas com pelo menos 10 GB de RAM e 8 núcleos de CPU; aparelhos com GPU fraca ainda podem preferir o perfil intermediário.
+Preset aplicado: resolução 1x, 4 pipeline workers e anisotropia 4x; GPU texture unswizzle permanece sob controle manual. A seleção inicial usa este perfil apenas com pelo menos 10 GB de RAM e 8 núcleos de CPU; aparelhos com GPU fraca ainda podem preferir o perfil intermediário.
 
 | Opção | Ponto de partida |
 |---|---|
@@ -70,7 +70,7 @@ Preset aplicado: resolução 1x, 4 pipeline workers, anisotropia 4x e GPU textur
 - Snapdragon 750G / Adreno 619
 - ARM64, 8 GB RAM, Android 14 (referência de teste)
 
-Pelo heurístico atual, o M23 (8 GB e 8 núcleos) inicia no perfil intermediário: resolução 0,75x, 2 pipeline workers, anisotropia 2x e GPU unswizzle ligado. Se a Adreno 619 ficar limitada pela GPU ou aquecer demais, selecionar Entrada/Economia ou desligar o unswizzle. Usar Vulkan e NCE quando compatíveis, driver estável por jogo, cache persistente e sem overclock.
+Pelo heurístico atual, o M23 (8 GB e 8 núcleos) inicia no perfil intermediário: resolução 0,75x, 2 pipeline workers e anisotropia 2x. O GPU unswizzle fica desligado por padrão até validar a compatibilidade no Adreno 619; pode ser testado manualmente por jogo. Usar Vulkan e NCE quando compatíveis, driver estável por jogo, cache persistente e sem overclock.
 
 ## Alterações globais aplicadas
 

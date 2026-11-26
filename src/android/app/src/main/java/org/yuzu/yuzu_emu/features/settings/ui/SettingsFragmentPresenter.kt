@@ -585,9 +585,9 @@ class SettingsFragmentPresenter(
         IntSetting.ANDROID_PIPELINE_WORKERS.setInt(workers)
         IntSetting.MAX_ANISOTROPY.setInt(
             when (profile) {
-                2 -> 4
+                2 -> 3
                 1 -> 2
-                else -> 0
+                else -> 1
             }
         )
 

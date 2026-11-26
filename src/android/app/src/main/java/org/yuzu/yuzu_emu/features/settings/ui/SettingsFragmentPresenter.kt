@@ -591,9 +591,8 @@ class SettingsFragmentPresenter(
             }
         )
 
-        // GPU texture unswizzling is useful on balanced/high tiers; keep an opt-out
-        // on entry-level GPUs where the extra compute workload may become a bottleneck.
-        BooleanSetting.GPU_UNSWIZZLE_ENABLED.setBoolean(profile != 0)
+        // Keep experimental GPU texture unswizzling user-controlled. Some mobile
+        // Vulkan drivers need it disabled for compatibility; do not force it in presets.
 
         // Safe, broadly useful settings. Do not force accuracy, clock, or memory hacks.
         BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.setBoolean(true)

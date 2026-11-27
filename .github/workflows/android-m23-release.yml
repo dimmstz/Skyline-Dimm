@@ -5,22 +5,14 @@ on:
   pull_request:
     branches:
       - "**"
-    paths:
-      - "README.md"
-      - ".github/workflows/**"
-      - "patches/android/**"
-      - "src/android/**"
-      - "src/video_core/**"
-      - "src/common/**"
   push:
     branches:
-      - main
+      - "**"
     paths:
+      - ".github/workflows/**"
       - "README.md"
       - "patches/android/**"
-      - "src/android/**"
-      - "src/video_core/**"
-      - "src/common/**"
+      - "src/**"
 
 permissions:
   contents: write
@@ -69,17 +61,13 @@ jobs:
           set -euo pipefail
           git -C eden config user.name "github-actions[bot]"
           git -C eden config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          SOURCE_REF="${GITHUB_SHA}"
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            SOURCE_REF="${{ github.event.pull_request.head.sha }}"
-          fi
-          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git "${SOURCE_REF}"
+          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
           git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
           git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
-          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/java/org/yuzu/yuzu_emu/utils/GpuDriverHelper.kt src/android/app/src/main/jni/native.cpp src/android/app/src/main/res/values/strings.xml src/video_core/vulkan_common/vulkan_device.h
+          git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml
           cp /tmp/eden-upstream-readme.md eden/README-UPSTREAM.md
           cp README.md eden/M23-PERFORMANCE-PROFILE.md
-          git -C eden add .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/java/org/yuzu/yuzu_emu/utils/GpuDriverHelper.kt src/android/app/src/main/jni/native.cpp src/android/app/src/main/res/values/strings.xml src/video_core/vulkan_common/vulkan_device.h README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
+          git -C eden add .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml README-UPSTREAM.md M23-PERFORMANCE-PROFILE.md
           if ! git -C eden diff --cached --quiet; then
             git -C eden commit -m "Integrate Eden upstream source with Galaxy M23 profile"
           fi
@@ -88,30 +76,6 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
             git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
           fi
-
-      - name: Restore Android multiplayer overlay sources
-        run: |
-          set -euo pipefail
-          # native.cpp in this branch includes Android multiplayer support.
-          # The imported upstream checkout does not carry these overlay files.
-          mkdir -p eden/src/common/android/multiplayer
-          cp src/common/android/multiplayer/multiplayer.h eden/src/common/android/multiplayer/
-          cp src/common/android/multiplayer/multiplayer.cpp eden/src/common/android/multiplayer/
-          # Register the implementation with the imported common target once.
-          if ! grep -q "SKYLINE_DIMM_ANDROID_MULTIPLAYER_OVERLAY" eden/src/common/CMakeLists.txt; then
-            cat >> eden/src/common/CMakeLists.txt <<'CMAKE'
-
-# SKYLINE_DIMM_ANDROID_MULTIPLAYER_OVERLAY
-if(ANDROID)
-    target_sources(common PRIVATE
-        android/multiplayer/multiplayer.cpp
-        android/multiplayer/multiplayer.h
-    )
-endif()
-CMAKE
-          fi
-          test -s eden/src/common/android/multiplayer/multiplayer.h
-          test -s eden/src/common/android/multiplayer/multiplayer.cpp
 
       - name: Apply Skyline-Dimm Android patches
         working-directory: eden
@@ -182,10 +146,20 @@ CMAKE
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Create and push version tag
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          TAG_NAME: m23-build-${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          git tag -a "$TAG_NAME" "$GITHUB_SHA" -m "Skyline-Dimm M23 Build $GITHUB_RUN_NUMBER"
+          git push origin "refs/tags/$TAG_NAME"
+
       - name: Publish APK GitHub Release
         if: success() && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
           tag_name: m23-build-${{ github.run_number }}
           name: Skyline-Dimm M23 Build ${{ github.run_number }}
           target_commitish: ${{ github.sha }}

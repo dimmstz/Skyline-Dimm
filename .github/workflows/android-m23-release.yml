@@ -9,6 +9,8 @@ on:
       - "README.md"
       - "patches/android/**"
       - "src/android/**"
+      - "src/video_core/**"
+      - "src/common/**"
   push:
     branches:
       - main
@@ -16,6 +18,8 @@ on:
       - "README.md"
       - "patches/android/**"
       - "src/android/**"
+      - "src/video_core/**"
+      - "src/common/**"
 
 permissions:
   contents: write
@@ -64,7 +68,11 @@ jobs:
           set -euo pipefail
           git -C eden config user.name "github-actions[bot]"
           git -C eden config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git main
+          SOURCE_REF="${GITHUB_SHA}"
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            SOURCE_REF="${{ github.event.pull_request.head.sha }}"
+          fi
+          git -C eden fetch https://github.com/${GITHUB_REPOSITORY}.git "${SOURCE_REF}"
           git -C eden show FETCH_HEAD:README.md > /tmp/eden-upstream-readme.md
           git -C eden merge --allow-unrelated-histories --no-edit -X ours FETCH_HEAD
           git -C eden checkout FETCH_HEAD -- .github/workflows/android-m23-release.yml src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt src/android/app/src/main/res/values/strings.xml

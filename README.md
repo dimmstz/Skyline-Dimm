@@ -87,3 +87,7 @@ Super special thanks to Cloudflare for preventing the git server from blowing up
 - Ryubing
 
 And everyone who continues or had contributed to the project! <3
+
+## Android GPU vendor detection validation
+
+The Android build detects the active Vulkan physical-device vendor using Vulkan vendor IDs (Qualcomm Adreno: 0x5143; ARM Mali: 0x13B5). Custom-driver loading capability is evaluated separately and is not used as a GPU-vendor heuristic.

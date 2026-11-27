@@ -4,6 +4,8 @@
 package org.yuzu.yuzu_emu.features.settings.ui
 
 import android.annotation.SuppressLint
+import org.yuzu.yuzu_emu.overlay.OverlayColorActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.os.Build
 import android.widget.Toast
 import org.yuzu.yuzu_emu.NativeLibrary
@@ -37,7 +39,6 @@ import org.yuzu.yuzu_emu.utils.FullscreenHelper
 import androidx.core.content.edit
 import androidx.fragment.app.FragmentActivity
 import org.yuzu.yuzu_emu.fragments.MessageDialogFragment
-import org.yuzu.yuzu_emu.overlay.OverlayColorActivity
 
 class SettingsFragmentPresenter(
     private val settingsViewModel: SettingsViewModel,
@@ -407,6 +408,23 @@ class SettingsFragmentPresenter(
 
     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
+            val profilePreferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
+            if (!profilePreferences.contains("profile")) {
+                applyHardwareProfile(0, showToast = false)
+            }
+            val selectedProfile = profilePreferences.getString("profile", "performance") ?: "performance"
+            val profileLabel = when (selectedProfile) {
+                "balanced" -> context.getString(R.string.hardware_profile_balanced)
+                "hardcore" -> context.getString(R.string.hardware_profile_hardcore)
+                else -> context.getString(R.string.hardware_profile_performance)
+            }
+            add(
+                RunnableSetting(
+                    titleId = R.string.hardware_profile_title,
+                    descriptionString = context.getString(R.string.hardware_profile_current, profileLabel),
+                    isRunnable = !NativeLibrary.isRunning() && !NativeConfig.isPerGameConfigLoaded()
+                ) { showHardwareProfileDialog() }
+            )
             add(
                 SubmenuSetting(
                     titleId = R.string.preferences_system,
@@ -439,6 +457,14 @@ class SettingsFragmentPresenter(
                         descriptionId = R.string.soc_overlay_options_description,
                         iconId = R.drawable.ic_system,
                         menuKey = MenuTag.SECTION_SOC_OVERLAY
+                    )
+                )
+                add(
+                    SubmenuSetting(
+                        titleId = R.string.overlay_color_customize,
+                        descriptionId = R.string.overlay_color_customize_summary,
+                        iconId = R.drawable.ic_controller,
+                        menuKey = MenuTag.SECTION_OVERLAY_COLOR
                     )
                 )
                 add(
@@ -495,6 +521,94 @@ class SettingsFragmentPresenter(
         }
     }
 
+
+    private fun showHardwareProfileDialog() {
+        val profiles = arrayOf(
+            context.getString(R.string.hardware_profile_performance),
+            context.getString(R.string.hardware_profile_balanced),
+            context.getString(R.string.hardware_profile_hardcore)
+        )
+        val preferences = context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
+        val current = when (preferences.getString("profile", "performance")) {
+            "balanced" -> 1
+            "hardcore" -> 2
+            else -> 0
+        }
+
+        MaterialAlertDialogBuilder(activity ?: context)
+            .setTitle(R.string.hardware_profile_title)
+            .setSingleChoiceItems(profiles, current) { dialog, selected ->
+                applyHardwareProfile(selected)
+                dialog.dismiss()
+                loadSettingsList(true)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun applyHardwareProfile(profile: Int, showToast: Boolean = true) {
+        // Use Eden's registered settings instead of invented config keys.
+        // Resolution values: 0=0.25x, 1=0.5x, 3=1.0x, 4=1.25x.
+        val resolution = when (profile) {
+            1 -> 3
+            2 -> 4
+            else -> 0
+        }
+        val workers = when (profile) {
+            1 -> 3
+            2 -> 4
+            else -> 2
+        }
+
+        IntSetting.RENDERER_RESOLUTION.setInt(resolution)
+        IntSetting.RENDERER_ACCURACY.setInt(0)
+        IntSetting.MAX_ANISOTROPY.setInt(if (profile == 0) 0 else if (profile == 1) 2 else 4)
+        IntSetting.ANDROID_PIPELINE_WORKERS.setInt(workers)
+        IntSetting.RENDERER_ASTC_DECODE_METHOD.setInt(2)
+        IntSetting.RENDERER_VRAM_USAGE_MODE.setInt(0)
+        IntSetting.RENDERER_ANTI_ALIASING.setInt(0)
+        IntSetting.RENDERER_SCALING_FILTER.setInt(0)
+        IntSetting.RENDERER_SAMPLE_SHADING.setInt(0)
+        IntSetting.CPU_ACCURACY.setInt(if (profile == 0) 2 else 0)
+
+        // Favor low-overhead CPU execution on the M23 profile.
+        BooleanSetting.FASTMEM.setBoolean(true)
+        BooleanSetting.SKIP_CPU_INNER_INVALIDATION.setBoolean(profile == 0)
+
+        BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.setBoolean(true)
+        BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.setBoolean(true)
+        BooleanSetting.RENDERER_ASYNCHRONOUS_GPU_EMULATION.setBoolean(true)
+        BooleanSetting.USE_OPTIMIZED_VERTEX_BUFFERS.setBoolean(true)
+        BooleanSetting.RENDERER_REACTIVE_FLUSHING.setBoolean(profile != 0)
+        BooleanSetting.SYNC_MEMORY_OPERATIONS.setBoolean(false)
+        BooleanSetting.ENABLE_BUFFER_HISTORY.setBoolean(false)
+        BooleanSetting.RENDERER_FORCE_MAX_CLOCK.setBoolean(false)
+
+        NativeConfig.saveGlobalConfig()
+        val key = when (profile) {
+            1 -> "balanced"
+            2 -> "hardcore"
+            else -> "performance"
+        }
+        context.getSharedPreferences("skyline_dimm_hardware_profile", 0)
+            .edit()
+            .putString("profile", key)
+            .apply()
+        if (showToast) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.hardware_profile_applied, profilesLabel(profile)),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun profilesLabel(profile: Int): String = when (profile) {
+        1 -> context.getString(R.string.hardware_profile_balanced)
+        2 -> context.getString(R.string.hardware_profile_hardcore)
+        else -> context.getString(R.string.hardware_profile_performance)
+    }
+
     private fun addSystemSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
             add(StringSetting.DEVICE_NAME.key)
@@ -518,10 +632,6 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.USE_CUSTOM_CPU_TICKS.key)
             add(IntSetting.CPU_TICKS.key)
 
-            if (!NativeConfig.isPerGameConfigLoaded()) {
-                add(HeaderSetting(R.string.network))
-                add(StringSetting.WEB_USERNAME.key)
-            }
         }
     }
 
@@ -597,18 +707,25 @@ class SettingsFragmentPresenter(
         }
     }
 
+    private fun addOverlayColorSettings(sl: ArrayList<SettingsItem>) {
+        sl.add(
+            RunnableSetting(
+                titleId = R.string.overlay_color_customize,
+                descriptionId = R.string.overlay_color_customize_summary,
+                isRunnable = true
+            ) {
+                activity?.let { currentActivity ->
+                    currentActivity.startActivity(OverlayColorActivity.createIntent(currentActivity))
+                }
+            }
+        )
+    }
+
     private fun addInputOverlaySettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
             add(BooleanSetting.SHOW_INPUT_OVERLAY.key)
             add(BooleanSetting.OVERLAY_SNAP_TO_GRID.key)
             add(IntSetting.OVERLAY_GRID_SIZE.key)
-            add(
-                LaunchableSetting(
-                    titleId = R.string.overlay_color_customize,
-                    descriptionId = R.string.overlay_color_customize_summary,
-                    launchIntent = { host -> OverlayColorActivity.createIntent(host) }
-                )
-            )
             add(
                 LaunchableSetting(
                     titleId = R.string.edit_overlay_layout,
@@ -623,16 +740,6 @@ class SettingsFragmentPresenter(
             add(IntSetting.INPUT_OVERLAY_AUTO_HIDE.key)
             add(BooleanSetting.HIDE_OVERLAY_ON_CONTROLLER_INPUT.key)
         }
-    }
-
-    private fun addOverlayColorSettings(sl: ArrayList<SettingsItem>) {
-        sl.add(
-            LaunchableSetting(
-                titleId = R.string.overlay_color_customize,
-                descriptionId = R.string.overlay_color_customize_summary,
-                launchIntent = { host -> OverlayColorActivity.createIntent(host) }
-            )
-        )
     }
 
     private fun addSocOverlaySettings(sl: ArrayList<SettingsItem>) {

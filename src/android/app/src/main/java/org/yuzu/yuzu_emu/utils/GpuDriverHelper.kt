@@ -218,10 +218,8 @@ object GpuDriverHelper {
         hookLibPath: String
     ): String?
 
-    external fun getGpuVendorId(
-        surface: Surface = Surface(SurfaceTexture(true)),
-        hookLibPath: String
-    ): Int
+    // Enumerates Vulkan physical devices without creating a dummy Android Surface.
+    external fun getGpuVendorId(hookLibPath: String): Int
 
     /**
      * Vulkan vendor IDs: Qualcomm = 0x5143, ARM = 0x13B5.

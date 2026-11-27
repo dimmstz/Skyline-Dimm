@@ -929,6 +929,46 @@ jstring Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_getGpuModel(JNIEnv *env, j
 #endif
 }
 
+jint Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_getGpuVendorId(
+    JNIEnv* env, jobject j_obj, jstring j_hook_lib_dir) {
+#ifdef ARCHITECTURE_arm64
+    try {
+        const char* file_redirect_dir_{};
+        int featureFlags{};
+        const std::string hook_lib_dir = Common::Android::GetJString(env, j_hook_lib_dir);
+        auto handle = adrenotools_open_libvulkan(RTLD_NOW, featureFlags, nullptr,
+                                                 hook_lib_dir.c_str(), nullptr, nullptr,
+                                                 file_redirect_dir_, nullptr);
+        if (!handle) {
+            LOG_WARNING(Frontend, "Unable to load Vulkan library for GPU vendor detection");
+            return -1;
+        }
+
+        auto driver_library = std::make_shared<Common::DynamicLibrary>(handle);
+        Vulkan::vk::InstanceDispatch dld;
+        auto instance = Vulkan::CreateInstance(*driver_library, dld, VK_API_VERSION_1_1,
+                                               Core::Frontend::WindowSystemType::Android);
+        const auto physical_devices = instance.EnumeratePhysicalDevices();
+        if (physical_devices.empty()) {
+            LOG_WARNING(Frontend, "No Vulkan physical devices found during GPU vendor detection");
+            return -1;
+        }
+
+        VkPhysicalDeviceProperties properties{};
+        dld.vkGetPhysicalDeviceProperties(physical_devices.front(), &properties);
+        return static_cast<jint>(properties.vendorID);
+    } catch (const std::exception& exception) {
+        LOG_WARNING(Frontend, "GPU vendor detection failed: {}", exception.what());
+        return -1;
+    } catch (...) {
+        LOG_WARNING(Frontend, "GPU vendor detection failed with an unknown error");
+        return -1;
+    }
+#else
+    return -1;
+#endif
+}
+
 jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_reloadKeys(JNIEnv* env, jclass clazz) {
     Core::Crypto::KeyManager::Instance().ReloadKeys();
     return static_cast<jboolean>(Core::Crypto::KeyManager::Instance().AreKeysLoaded());

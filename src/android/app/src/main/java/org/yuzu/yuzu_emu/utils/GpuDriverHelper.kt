@@ -218,13 +218,28 @@ object GpuDriverHelper {
         hookLibPath: String
     ): String?
 
-    fun isAdrenoGpu(): Boolean {
+    // Enumerates Vulkan physical devices without creating a dummy Android Surface.
+    external fun getGpuVendorId(hookLibPath: String): Int
+
+    /**
+     * Vulkan vendor IDs: Qualcomm = 0x5143, ARM = 0x13B5.
+     * Do not use supportsCustomDriverLoading() here: that checks KGSL availability,
+     * not the physical GPU vendor, and therefore misclassifies Mali devices.
+     */
+    fun getDetectedGpuVendorId(): Int {
+        val hookPath = hookLibPath ?: return -1
         return try {
-            supportsCustomDriverLoading()
-        } catch (e: Exception) {
-            false
+            getGpuVendorId(hookLibPath = hookPath)
+        } catch (_: Exception) {
+            -1
+        } catch (_: UnsatisfiedLinkError) {
+            -1
         }
     }
+
+    fun isAdrenoGpu(): Boolean = getDetectedGpuVendorId() == 0x5143
+
+    fun isMaliGpu(): Boolean = getDetectedGpuVendorId() == 0x13B5
 
     // Parse the custom driver metadata to retrieve the name.
     val installedCustomDriverData: GpuDriverMetadata

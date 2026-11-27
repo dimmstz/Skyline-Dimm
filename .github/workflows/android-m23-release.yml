@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - main
+      - "**"
     paths:
       - "README.md"
       - ".github/workflows/**"
@@ -85,7 +85,7 @@ jobs:
           fi
           AUTH_HEADER="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
           # Pull-request builds validate the candidate without writing to main.
-          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ "${GITHUB_REF}" = "refs/heads/main" ]; then
             git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
           fi
 
@@ -183,7 +183,7 @@ CMAKE
           retention-days: 14
 
       - name: Publish APK GitHub Release
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: m23-build-${{ github.run_number }}

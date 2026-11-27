@@ -313,6 +313,11 @@ public:
         return properties.properties.deviceName;
     }
 
+    /// Returns the Vulkan physical-device vendor ID.
+    u32 GetVendorID() const {
+        return properties.properties.vendorID;
+    }
+
     /// Returns the driver ID.
     VkDriverIdKHR GetDriverID() const {
         return properties.driver.driverID;

@@ -14,6 +14,7 @@ on:
     branches:
       - main
     paths:
+      - ".github/workflows/**"
       - "README.md"
       - "patches/android/**"
       - "src/android/**"

@@ -88,6 +88,30 @@ jobs:
             git -C eden -c http.extraheader="AUTHORIZATION: basic $AUTH_HEADER" push https://github.com/${GITHUB_REPOSITORY}.git HEAD:main
           fi
 
+      - name: Restore Android multiplayer overlay sources
+        run: |
+          set -euo pipefail
+          # native.cpp in this branch includes Android multiplayer support.
+          # The imported upstream checkout does not carry these overlay files.
+          mkdir -p eden/src/common/android/multiplayer
+          cp src/common/android/multiplayer/multiplayer.h eden/src/common/android/multiplayer/
+          cp src/common/android/multiplayer/multiplayer.cpp eden/src/common/android/multiplayer/
+          # Register the implementation with the imported common target once.
+          if ! grep -q "SKYLINE_DIMM_ANDROID_MULTIPLAYER_OVERLAY" eden/src/common/CMakeLists.txt; then
+            cat >> eden/src/common/CMakeLists.txt <<'CMAKE'
+
+# SKYLINE_DIMM_ANDROID_MULTIPLAYER_OVERLAY
+if(ANDROID)
+    target_sources(common PRIVATE
+        android/multiplayer/multiplayer.cpp
+        android/multiplayer/multiplayer.h
+    )
+endif()
+CMAKE
+          fi
+          test -s eden/src/common/android/multiplayer/multiplayer.h
+          test -s eden/src/common/android/multiplayer/multiplayer.cpp
+
       - name: Apply Skyline-Dimm Android patches
         working-directory: eden
         run: |

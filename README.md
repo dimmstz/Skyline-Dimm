@@ -94,4 +94,4 @@ The Android build detects the active Vulkan physical-device vendor using Vulkan 
 
 ### Validação Android
 
-A validação da detecção de fabricante Vulkan deve compilar o código Android ARM64 da própria branch da pull request, sem publicar alterações dessa validação diretamente na branch `main`. Builds de branches de PR são apenas validações e não criam releases estáveis.
+A validação da detecção de fabricante Vulkan deve compilar o código Android ARM64 da própria branch da pull request, sem publicar alterações dessa validação diretamente na branch `main`. Builds de branches de PR são apenas validações e não criam releases estáveis; a publicação estável permanece restrita à branch principal.
